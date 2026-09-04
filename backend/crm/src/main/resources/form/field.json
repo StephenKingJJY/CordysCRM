@@ -2547,7 +2547,7 @@
       "editable": true,
       "fieldWidth": 1,
       "mobile": true,
-      "format": "11"
+      "format": "255"
     }
   ]
 }
