@@ -1,3 +1,5 @@
+FROM --platform=linux/amd64 1panel/cordys-crm:latest AS official-assets
+
 FROM --platform=${BUILDPLATFORM} node:22-slim AS frontend
 
 WORKDIR /frontend
@@ -34,6 +36,8 @@ COPY installer/conf /installer/conf
 
 COPY installer/mcp /app/mcp
 COPY installer/cockpit /app/cockpit
+COPY --from=official-assets /app/mcp/cordys-crm-mcp-server.jar /app/mcp/cordys-crm-mcp-server.jar
+COPY --from=official-assets /app/cockpit/cordys-crm-cockpit.jar /app/cockpit/cordys-crm-cockpit.jar
 
 ENV JAVA_CLASSPATH=/app:/app/lib/*
 ENV JAVA_MAIN_CLASS=cn.cordys.Application
