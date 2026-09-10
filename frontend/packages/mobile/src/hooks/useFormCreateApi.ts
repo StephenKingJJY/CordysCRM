@@ -18,7 +18,7 @@ import {
 } from '@lib/shared/method/formCreate';
 import type { ModuleField } from '@lib/shared/models/common';
 import type { CollaborationType } from '@lib/shared/models/customer';
-import type { FormConfig } from '@lib/shared/models/system/module';
+import type { FormConfig, FormDesignConfigDetailParams } from '@lib/shared/models/system/module';
 
 import type { CrmDescriptionItem } from '@/components/pure/crm-description/index.vue';
 
@@ -49,6 +49,7 @@ export default function useFormCreateApi(props: FormCreateApiProps) {
   const specialInitialOptions = ref<Record<string, any>[]>([]); // 特殊字段的初始化选项列表
   const descriptions = ref<CrmDescriptionItem[]>([]); // 表单详情描述列表
   const fieldList = ref<FormCreateField[]>([]); // 表单字段列表
+  const moduleFormConfig = ref<FormDesignConfigDetailParams>();
   const fieldShowControlMap = ref<Record<string, any>>({}); // 表单字段显示控制映射
   const formConfig = ref<FormConfig>({
     layout: 1,
@@ -762,10 +763,12 @@ export default function useFormCreateApi(props: FormCreateApiProps) {
   async function initFormConfig() {
     try {
       loading.value = true;
+      moduleFormConfig.value = undefined;
       const res = await getFormConfigApiMap[props.formKey](
         props.sourceId?.value ?? '',
         props.otherSaveParams?.approvalTaskId
       );
+      moduleFormConfig.value = cloneDeep(res);
       formConfig.value = res.formProp;
       fieldList.value = res.fields.map((item) => {
         const { defaultValue, initialOptions } = specialFormFieldInit(item);
@@ -820,6 +823,10 @@ export default function useFormCreateApi(props: FormCreateApiProps) {
         moduleFields: [],
         id: props.sourceId?.value,
       };
+      if (props.formKey === FormDesignKeyEnum.ORDER) {
+        if (!moduleFormConfig.value) throw new Error(t('mobileOrder.formConfigUnavailable'));
+        params.moduleFormConfigDTO = cloneDeep(moduleFormConfig.value);
+      }
       fieldList.value.forEach((item) => {
         if (item.businessKey) {
           // 存在业务字段，则按照业务字段的key存储

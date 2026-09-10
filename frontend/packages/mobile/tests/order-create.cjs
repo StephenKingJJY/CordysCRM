@@ -128,8 +128,49 @@ async function main() {
   await ctx.handleSave();
   assert.equal(saves.length, 1);
   assert.equal(ctx.saving.value, false);
+  const hookSource = fs.readFileSync('src/hooks/useFormCreateApi.ts', 'utf8');
+  const hookCode = hookSource.slice(
+    hookSource.indexOf('  async function saveForm('),
+    hookSource.indexOf('  const formCreateTitle')
+  );
+  const snapshot = {
+    fields: [{ id: 'nameField', businessKey: 'name', rules: [{ key: 'required' }] }],
+    formProp: { layout: 1 },
+  };
+  const requests = [];
+  const apiCtx = {
+    props: { formKey: 'ORDER' },
+    loading: ref(false),
+    moduleFormConfig: ref(snapshot),
+    fieldList: ref([{ id: 'nameField', businessKey: 'name' }, { id: 'lines' }]),
+    FormDesignKeyEnum: { ORDER: 'ORDER', CLUE_TRANSITION_CUSTOMER: 'CLUE_TRANSITION_CUSTOMER' },
+    cloneDeep: structuredClone,
+    getNormalFieldValue: (_field, value) => value,
+    createFormApi: {
+      ORDER: async (request) => {
+        requests.push(request);
+      },
+    },
+    showSuccessToast() {},
+    t: (key) => key,
+    console: { log() {} },
+    sleep: async () => {},
+  };
+  vm.createContext(apiCtx);
+  vm.runInContext(ts.transpile(hookCode, { module: ts.ModuleKind.CommonJS }), apiCtx);
+  await apiCtx.saveForm({ nameField: 'isolated-test', lines: saves[0].lines });
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].name, 'isolated-test');
+  assert.deepEqual(requests[0].moduleFormConfigDTO, snapshot);
+  assert.notEqual(requests[0].moduleFormConfigDTO, snapshot);
+  assert.equal(requests[0].moduleFields[0].fieldId, 'lines');
+  assert.equal(requests[0].moduleFields[0].fieldValue[0].product, 'sku-id');
+  apiCtx.moduleFormConfig.value = undefined;
+  await apiCtx.saveForm({ nameField: 'must-not-submit' });
+  assert.equal(requests.length, 1);
+  assert.equal(apiCtx.loading.value, false);
   console.log(
-    'PASS: decimal amounts, zero price, multi-line totals, formula errors, payload normalization, duplicate-submit guard, required validation. No production order submitted.'
+    'PASS: decimal amounts, zero price, multi-line totals, formula errors, payload normalization, duplicate-submit guard, required validation, full order form snapshot and missing-config guard. No production order submitted.'
   );
 }
 

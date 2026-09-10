@@ -1,5 +1,6 @@
 export default {
   'mobileOrder.create': 'New order',
+  'mobileOrder.formConfigUnavailable': 'Order form configuration is not loaded. Refresh and retry.',
   'mobileOrder.addProduct': 'Add product',
   'mobileOrder.productLine': 'Product {number}',
   'mobileOrder.productRequired': 'Please add and select a product',

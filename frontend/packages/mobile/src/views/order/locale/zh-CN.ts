@@ -1,5 +1,6 @@
 export default {
   'mobileOrder.create': '新建订单',
+  'mobileOrder.formConfigUnavailable': '订单表单配置未加载，请刷新后重试',
   'mobileOrder.addProduct': '添加产品',
   'mobileOrder.productLine': '产品 {number}',
   'mobileOrder.productRequired': '请添加并选择产品',
