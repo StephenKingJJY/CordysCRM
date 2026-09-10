@@ -1,4 +1,11 @@
 export default {
+  'mobileOrder.create': '新建订单',
+  'mobileOrder.addProduct': '添加产品',
+  'mobileOrder.productLine': '产品 {number}',
+  'mobileOrder.productRequired': '请添加并选择产品',
+  'mobileOrder.invalidNumber': '请输入有效数值；数量须为正整数，单价不可为负数',
+  'mobileOrder.formulaError': '金额计算失败，请检查产品数据后重试',
+  'mobileOrder.unsupportedField': '此字段暂不支持手机录入，请在电脑端新建',
   'mobileOrder.title': '订单',
   'mobileOrder.detail': '订单详情',
   'mobileOrder.search': '搜索客户或订单名称',

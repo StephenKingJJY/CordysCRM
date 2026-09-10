@@ -12,6 +12,12 @@
             :origin-form-detail="originFormDetail"
             :form-detail="formDetail"
             :need-init-detail="route.query.needInitDetail === 'Y'"
+            v-bind="
+              formKey === FormDesignKeyEnum.ORDER &&
+              [FieldTypeEnum.SUB_PRODUCT, FieldTypeEnum.FORMULA].includes(item.type)
+                ? { fields: fieldList }
+                : {}
+            "
             @change="($event: any) => handleFieldChange($event, item)"
           />
         </template>
@@ -23,7 +29,7 @@
           type="default"
           class="crm-button-primary--secondary !rounded-[var(--border-radius-small)] !text-[16px]"
           block
-          :disabled="loading"
+          :disabled="loading || saving"
           @click="router.back"
         >
           {{ t('common.cancel') }}
@@ -31,7 +37,8 @@
         <van-button
           type="primary"
           class="!rounded-[var(--border-radius-small)] !text-[16px]"
-          :loading="loading"
+          :loading="loading || saving"
+          :disabled="!fieldList.length"
           block
           @click="handleSave"
         >
@@ -52,6 +59,8 @@
 
   import CrmPageWrapper from '@/components/pure/crm-page-wrapper/index.vue';
   import CrmFormCreateComponents from '@/components/business/crm-form-create/components';
+  import OrderFormulaValue from '@/views/order/components/formula-value.vue';
+  import OrderProductLines from '@/views/order/components/product-lines.vue';
 
   import { checkRepeat } from '@/api/modules';
   import useFormCreateApi from '@/hooks/useFormCreateApi';
@@ -60,7 +69,10 @@
   import { rules } from '@cordys/web/src/components/business/crm-form-create/config';
   import { FormCreateField, FormCreateFieldRule } from '@cordys/web/src/components/business/crm-form-create/types';
 
+  const props = defineProps<{ formKey?: FormDesignKeyEnum }>();
   const route = useRoute();
+  const formKey = props.formKey || (route.query.formKey as FormDesignKeyEnum);
+  const saving = ref(false);
   const router = useRouter();
   const { t } = useI18n();
   const userStore = useUserStore();
@@ -80,7 +92,7 @@
     saveForm,
     initFormShowControl,
   } = useFormCreateApi({
-    formKey: route.query.formKey as FormDesignKeyEnum,
+    formKey,
     sourceId: ref(route.query.id as string),
     needInitDetail: route.query.needInitDetail === 'Y',
     initialSourceName: route.query.initialSourceName as string,
@@ -92,6 +104,8 @@
   });
 
   function getItemComponent(type: FieldTypeEnum) {
+    if (formKey === FormDesignKeyEnum.ORDER && type === FieldTypeEnum.SUB_PRODUCT) return OrderProductLines;
+    if (formKey === FormDesignKeyEnum.ORDER && type === FieldTypeEnum.FORMULA) return OrderFormulaValue;
     if (type === FieldTypeEnum.INPUT) {
       return CrmFormCreateComponents.basicComponents.singleText;
     }
@@ -156,6 +170,13 @@
   }
 
   function handleFieldChange(value: any, item: FormCreateField) {
+    if (formKey === FormDesignKeyEnum.ORDER && item.businessKey === 'customerId') {
+      const contract = fieldList.value.find((field) => field.businessKey === 'contractId');
+      if (contract) {
+        formDetail.value[contract.id] = '';
+        contract.initialOptions = [];
+      }
+    }
     // 控制显示规则
     if (item.showControlRules?.length) {
       initFormShowControl();
@@ -163,10 +184,27 @@
   }
 
   async function handleSave() {
+    if (loading.value || saving.value || !fieldList.value.length) return;
+    saving.value = true;
     try {
+      await nextTick();
       await formRef.value?.validate();
       const result = cloneDeep(formDetail.value);
       mobileFieldList.value.forEach((item) => {
+        if (formKey === FormDesignKeyEnum.ORDER && item.type === FieldTypeEnum.SUB_PRODUCT) {
+          result[item.id] = (result[item.id] || []).map((row: Record<string, any>) => {
+            const clean = { ...row };
+            delete clean._mobileKey;
+            item.subFields?.forEach((field) => {
+              const key = field.businessKey || field.id;
+              if (field.type === FieldTypeEnum.INPUT_NUMBER && clean[key] !== '' && clean[key] != null) {
+                clean[key] = Number(Number(clean[key]).toFixed(field.precision ?? 0));
+              }
+              if (field.type === FieldTypeEnum.DATA_SOURCE && Array.isArray(clean[key])) [clean[key]] = clean[key];
+            });
+            return clean;
+          });
+        }
         if (item.type === FieldTypeEnum.DATA_SOURCE && Array.isArray(result[item.id])) {
           // 处理数据源字段，单选传单个值
           result[item.id] = result[item.id]?.[0];
@@ -176,10 +214,12 @@
           result[item.id] = result[item.id]?.replace(/[\s\uFEFF\xA0]+/g, '');
         }
       });
-      saveForm(result, () => router.back());
+      await saveForm(result, () => router.back());
     } catch (error) {
       // eslint-disable-next-line no-console
       console.log(error);
+    } finally {
+      saving.value = false;
     }
   }
 
@@ -192,6 +232,7 @@
   });
 
   function getRuleType(item: FormCreateField) {
+    if (item.type === FieldTypeEnum.SUB_PRODUCT) return 'array';
     if (
       item.type === FieldTypeEnum.SELECT_MULTIPLE ||
       item.type === FieldTypeEnum.CHECKBOX ||
@@ -228,10 +269,7 @@
         const info = await checkRepeat({
           id: item.id,
           value,
-          formKey:
-            route.query.formKey !== FormDesignKeyEnum.CUSTOMER_CONTACT
-              ? (route.query.formKey as FormDesignKeyEnum)
-              : FormDesignKeyEnum.CONTACT,
+          formKey: formKey !== FormDesignKeyEnum.CUSTOMER_CONTACT ? formKey : FormDesignKeyEnum.CONTACT,
         });
         if (info.repeat) {
           return info.name?.length
@@ -257,8 +295,8 @@
     () => mobileFieldList.value,
     () => {
       mobileFieldList.value.forEach((item) => {
-        if (!formDetail.value[item.id]) {
-          let defaultValue = item.defaultValue || '';
+        if (formDetail.value[item.id] == null || formDetail.value[item.id] === '') {
+          let defaultValue = item.defaultValue ?? '';
           if ([FieldTypeEnum.DATE_TIME, FieldTypeEnum.INPUT_NUMBER].includes(item.type)) {
             defaultValue = Number(defaultValue) || null;
           }

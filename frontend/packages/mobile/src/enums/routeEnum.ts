@@ -2,6 +2,7 @@ export enum OrderRouteEnum {
   ORDER = 'order',
   ORDER_INDEX = 'orderIndex',
   ORDER_DETAIL = 'orderDetail',
+  ORDER_CREATE = 'orderCreate',
 }
 
 export enum OpportunityRouteEnum {

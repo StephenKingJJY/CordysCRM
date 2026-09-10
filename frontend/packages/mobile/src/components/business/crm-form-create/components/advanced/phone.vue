@@ -1,13 +1,13 @@
 <template>
   <van-field
     v-model="value"
-    type="tel"
+    :type="props.fieldConfig.internalKey === 'orderPhone' ? 'text' : 'tel'"
     :label="props.fieldConfig.showLabel ? props.fieldConfig.name : ''"
     :name="props.fieldConfig.id"
     :rules="mergedRules"
     :placeholder="props.fieldConfig.placeholder || t('common.pleaseInput')"
     :disabled="props.fieldConfig.editable === false"
-    :maxlength="30"
+    :maxlength="props.fieldConfig.internalKey === 'orderPhone' ? 255 : 30"
     clearable
     @update:model-value="($event) => emit('change', $event)"
   >

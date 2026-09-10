@@ -1,4 +1,11 @@
 export default {
+  'mobileOrder.create': 'New order',
+  'mobileOrder.addProduct': 'Add product',
+  'mobileOrder.productLine': 'Product {number}',
+  'mobileOrder.productRequired': 'Please add and select a product',
+  'mobileOrder.invalidNumber': 'Enter a valid value: positive integer quantity and non-negative price',
+  'mobileOrder.formulaError': 'Cannot calculate the amount. Check the product data and retry.',
+  'mobileOrder.unsupportedField': 'This field requires the desktop order form.',
   'mobileOrder.title': 'Orders',
   'mobileOrder.detail': 'Order details',
   'mobileOrder.search': 'Search customer or order name',

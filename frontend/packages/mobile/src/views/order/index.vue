@@ -1,5 +1,10 @@
 <template>
   <CrmPageWrapper :title="t('mobileOrder.title')" :back-route-name="WorkbenchRouteEnum.WORKBENCH_INDEX">
+    <div v-permission="['ORDER:ADD']" class="flex justify-end px-[16px] pt-[12px]">
+      <van-button type="primary" size="small" icon="plus" @click="router.push({ name: OrderRouteEnum.ORDER_CREATE })">
+        {{ t('mobileOrder.create') }}
+      </van-button>
+    </div>
     <van-search v-model="searchText" :placeholder="t('mobileOrder.search')" @search="search" @clear="search" />
     <div class="flex-1 overflow-auto p-[16px]">
       <van-pull-refresh v-model="refreshing" @refresh="refresh">

@@ -1,3 +1,5 @@
+import { FormDesignKeyEnum } from '@lib/shared/enums/formDesignEnum';
+
 import { OrderRouteEnum } from '@/enums/routeEnum';
 
 import { DEFAULT_LAYOUT } from '../base';
@@ -10,6 +12,13 @@ const order: AppRouteRecordRaw = {
   component: DEFAULT_LAYOUT,
   meta: { permissions: ['ORDER:READ'] },
   children: [
+    {
+      path: 'create',
+      name: OrderRouteEnum.ORDER_CREATE,
+      component: () => import('@/components/business/crm-form-create/index.vue'),
+      props: { formKey: FormDesignKeyEnum.ORDER },
+      meta: { locale: 'mobileOrder.create', permissions: ['ORDER:ADD'], depth: 3 },
+    },
     {
       path: 'index',
       name: OrderRouteEnum.ORDER_INDEX,

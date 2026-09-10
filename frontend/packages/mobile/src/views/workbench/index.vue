@@ -106,8 +106,19 @@
               @click="router.push({ name: OrderRouteEnum.ORDER_INDEX })"
               @keydown.enter="router.push({ name: OrderRouteEnum.ORDER_INDEX })"
             >
-              <CrmIcon name="iconicon_order_form" width="30px" height="30px" />
+              <OrderShortcutIcon />
               <div class="text-[12px] text-[var(--text-n1)]">{{ t('mobileOrder.title') }}</div>
+            </div>
+            <div
+              v-permission="['ORDER:ADD']"
+              class="quick-entry-card"
+              role="button"
+              tabindex="0"
+              @click="router.push({ name: OrderRouteEnum.ORDER_CREATE })"
+              @keydown.enter="router.push({ name: OrderRouteEnum.ORDER_CREATE })"
+            >
+              <OrderShortcutIcon create />
+              <div class="text-[12px] text-[var(--text-n1)]">{{ t('mobileOrder.create') }}</div>
             </div>
             <div
               v-for="card of entryCardList"
@@ -169,6 +180,7 @@
   import CrmIcon from '@/components/pure/crm-icon-font/index.vue';
   // import CrmSegmentTabs from '@/components/pure/crm-segment-tabs/index.vue';
   import CrmAvatar from '@/components/business/crm-avatar/index.vue';
+  import OrderShortcutIcon from '@/views/order/components/shortcut-icon.vue';
   import followPlanList from '@/views/workbench/follow/followPlanList.vue';
   import followRecordList from '@/views/workbench/follow/followRecordList.vue';
 
