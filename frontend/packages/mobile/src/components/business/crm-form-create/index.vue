@@ -1,5 +1,5 @@
 <template>
-  <CrmPageWrapper :title="formCreateTitle">
+  <CrmPageWrapper :title="formKey === FormDesignKeyEnum.ORDER ? t('mobileOrder.create') : formCreateTitle">
     <van-form ref="formRef" class="crm-form" required="auto">
       <van-cell-group inset>
         <template v-for="item in mobileFieldList" :key="item.id">
