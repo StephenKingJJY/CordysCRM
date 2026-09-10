@@ -99,6 +99,17 @@
           </van-cell>
           <div class="flex flex-wrap">
             <div
+              v-permission="['ORDER:READ']"
+              class="quick-entry-card"
+              role="button"
+              tabindex="0"
+              @click="router.push({ name: OrderRouteEnum.ORDER_INDEX })"
+              @keydown.enter="router.push({ name: OrderRouteEnum.ORDER_INDEX })"
+            >
+              <CrmIcon name="iconicon_order_form" width="30px" height="30px" />
+              <div class="text-[12px] text-[var(--text-n1)]">{{ t('mobileOrder.title') }}</div>
+            </div>
+            <div
               v-for="card of entryCardList"
               :key="card.name"
               v-permission="card.permission"
@@ -165,9 +176,9 @@
   import useAppStore from '@/store/modules/app';
   // import useLicenseStore from '@/store/modules/setting/license';
   import useUserStore from '@/store/modules/user';
-  // import showNoLicenseDialog from '@/utils/license';
 
-  import { CommonRouteEnum, MineRouteEnum, WorkbenchRouteEnum } from '@/enums/routeEnum';
+  // import showNoLicenseDialog from '@/utils/license';
+  import { CommonRouteEnum, MineRouteEnum, OrderRouteEnum, WorkbenchRouteEnum } from '@/enums/routeEnum';
 
   import { lastScopedOptions } from './duplicateCheck/config';
 

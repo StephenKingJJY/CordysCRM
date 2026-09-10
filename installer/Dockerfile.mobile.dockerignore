@@ -1,0 +1,6 @@
+**
+!frontend/
+!frontend/packages/
+!frontend/packages/mobile/
+!frontend/packages/mobile/dist/
+!frontend/packages/mobile/dist/**

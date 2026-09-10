@@ -1,0 +1,15 @@
+export default {
+  'mobileOrder.title': '订单',
+  'mobileOrder.detail': '订单详情',
+  'mobileOrder.search': '搜索客户或订单名称',
+  'mobileOrder.number': '订单编号',
+  'mobileOrder.customer': '客户',
+  'mobileOrder.amount': '订单金额',
+  'mobileOrder.status': '订单状态',
+  'mobileOrder.copy': '复制单号',
+  'mobileOrder.copied': '单号已复制',
+  'mobileOrder.copyFailed': '复制失败，请长按单号复制',
+  'mobileOrder.refresh': '刷新',
+  'mobileOrder.failed': '加载失败或无权查看，请重试',
+  'mobileOrder.retry': '重试',
+};

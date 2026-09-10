@@ -1,0 +1,3 @@
+# Preserve the deployed backend, desktop frontend, MCP and database runtime.
+FROM ghcr.io/stephenkingjjy/cordys-crm:virtual-phone-1a6c8e26e05009db62e2b1ed999cb911a3a0aa81
+COPY frontend/packages/mobile/dist /app/static/mobile

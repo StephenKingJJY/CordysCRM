@@ -1,3 +1,9 @@
+export enum OrderRouteEnum {
+  ORDER = 'order',
+  ORDER_INDEX = 'orderIndex',
+  ORDER_DETAIL = 'orderDetail',
+}
+
 export enum OpportunityRouteEnum {
   OPPORTUNITY = 'opportunity',
   OPPORTUNITY_INDEX = 'opportunityIndex',
@@ -57,6 +63,7 @@ export enum WorkbenchRouteEnum {
 }
 
 export const AppRouteEnum = {
+  ...OrderRouteEnum,
   ...OpportunityRouteEnum,
   ...ClueRouteEnum,
   ...CustomerRouteEnum,

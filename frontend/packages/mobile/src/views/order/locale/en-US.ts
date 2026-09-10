@@ -1,0 +1,15 @@
+export default {
+  'mobileOrder.title': 'Orders',
+  'mobileOrder.detail': 'Order details',
+  'mobileOrder.search': 'Search customer or order name',
+  'mobileOrder.number': 'Order number',
+  'mobileOrder.customer': 'Customer',
+  'mobileOrder.amount': 'Order amount',
+  'mobileOrder.status': 'Order status',
+  'mobileOrder.copy': 'Copy tracking number',
+  'mobileOrder.copied': 'Tracking number copied',
+  'mobileOrder.copyFailed': 'Copy failed. Press and hold the number to copy.',
+  'mobileOrder.refresh': 'Refresh',
+  'mobileOrder.failed': 'Unable to load or access this order. Please retry.',
+  'mobileOrder.retry': 'Retry',
+};
