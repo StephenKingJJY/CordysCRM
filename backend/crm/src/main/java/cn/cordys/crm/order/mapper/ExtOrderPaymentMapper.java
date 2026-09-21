@@ -23,6 +23,33 @@ public interface ExtOrderPaymentMapper {
         """)
     List<OrderPaymentResponse> list(@Param("orderId") String orderId, @Param("orgId") String orgId);
 
+    @Select("""
+        <script>
+        SELECT p.*, COALESCE(u.name,p.create_user) AS create_user_name,
+               COALESCE(v.name,p.void_user) AS void_user_name
+        FROM sales_order_payment p
+        LEFT JOIN sys_user u ON u.id=p.create_user
+        LEFT JOIN sys_user v ON v.id=p.void_user
+        WHERE p.organization_id=#{orgId} AND p.order_id IN
+        <foreach collection="orderIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        ORDER BY p.order_id,p.received_date,p.create_time,p.id
+        </script>
+        """)
+    List<OrderPaymentResponse> listForExport(@Param("orderIds") List<String> orderIds, @Param("orgId") String orgId);
+
+    @Select("""
+        <script>
+        SELECT a.resource_id AS payment_id,a.name
+        FROM sys_attachment a
+        JOIN sales_order_payment p ON p.id=a.resource_id AND p.organization_id=a.organization_id
+        WHERE p.organization_id=#{orgId} AND p.order_id IN
+        <foreach collection="orderIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        ORDER BY p.id,a.create_time,a.id
+        </script>
+        """)
+    List<cn.cordys.crm.order.dto.response.OrderPaymentExportReceipt> receiptsForExport(
+            @Param("orderIds") List<String> orderIds, @Param("orgId") String orgId);
+
     @Select("SELECT * FROM sales_order_payment WHERE id=#{id}")
     OrderPaymentResponse get(@Param("id") String id);
 

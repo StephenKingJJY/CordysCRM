@@ -64,6 +64,14 @@ class OrderPaymentPersistenceTest {
                 var receipts = mapper.receipts("p1", "a", "org"); assertEquals(1, receipts.size());
                 assertEquals("receipt.pdf", receipts.getFirst().name());
                 assertTrue(mapper.receipts("p1", "b", "org").isEmpty());
+                assertEquals(1, mapper.listForExport(java.util.List.of("a"), "org").size());
+                assertTrue(mapper.listForExport(java.util.List.of("b"), "org").isEmpty());
+                assertTrue(mapper.listForExport(java.util.List.of("a"), "other-org").isEmpty());
+                var exportReceipts = mapper.receiptsForExport(java.util.List.of("a"), "org");
+                assertEquals(1, exportReceipts.size()); assertEquals("p1", exportReceipts.getFirst().paymentId());
+                assertEquals("receipt.pdf", exportReceipts.getFirst().name());
+                assertTrue(mapper.receiptsForExport(java.util.List.of("a"), "other-org").isEmpty());
+                assertTrue(mapper.receiptsForExport(java.util.List.of("b"), "org").isEmpty());
                 assertEquals(1, mapper.voidPayment("p1", "a", "org", "u", 2, "Incorrect allocation"));
                 assertEquals(0, mapper.voidPayment("p1", "a", "org", "u", 3, "Second void"));
                 var voided = mapper.list("a", "org").getFirst(); assertTrue(voided.isVoided());

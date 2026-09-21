@@ -34,3 +34,15 @@
 发布前备份数据库和附件持久卷，并记录当前镜像标识。需要同时发布后端、电脑端和手机端；现有 mobile-only overlay 不包含后端及电脑端变更，不能用于本功能发布。启动后确认 Flyway 新迁移成功；使用隔离的测试订单核验新增、凭证下载、作废和汇总，再由财务使用。
 
 回滚使用原镜像并保留新增表及回款附件，不删除业务记录。注意原镜像不包含禁止删除带回款订单的友好提示，但外键仍保护相关订单。数据库备份只在需要恢复数据库且已核对新增业务数据影响时恢复。
+
+
+## Exporting order payments
+
+Both **Export all pages** and **Export selected orders** now create one workbook with two sheets:
+
+- **Orders** retains the selected order fields and appends total received, outstanding amount, payment status and the latest effective receipt date.
+- **Payment details** has one row per payment, including order number/name, receipt date, allocated amount, remark, recorder/time, valid/voided status, void reason/user/time, receipt filenames and the payment record ID.
+
+Voided records remain in the detail sheet but are excluded from received totals and latest receipt dates. Orders without registered payments show zero received and no latest receipt date. An order expanded into multiple product rows includes its payment totals only once. Money and dates are typed spreadsheet values. Receipt files are not embedded in the workbook; open them in CRM.
+
+The workbook uses the same selection, filters, department scope and approval export permissions as the existing order export. Payment queries are batched only for orders that passed those checks. An empty export still contains both sheets with headers.

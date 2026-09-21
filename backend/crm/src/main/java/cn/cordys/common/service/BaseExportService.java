@@ -140,6 +140,12 @@ public abstract class BaseExportService {
                                                                              List<Integer> mergeColumns, T t,
                                                                              CustomFunction<T, MergeResult> func) throws InterruptedException {
 
+        batchHandleDataWithMergeStrategy(headList, task, fileName, mergeColumns, t, func, null);
+    }
+
+    protected <T extends BasePageRequest> void batchHandleDataWithMergeStrategy(List<List<String>> headList, ExportTask task,
+            String fileName, List<Integer> mergeColumns, T t, CustomFunction<T, MergeResult> func, ExportDTO exportParam)
+            throws InterruptedException {
         File file = prepareExportFile(task.getFileId(), fileName, task.getOrganizationId());
 
         try (ExcelWriter writer = EasyExcel.write(file)
@@ -148,10 +154,10 @@ public abstract class BaseExportService {
                 .registerWriteHandler(new CustomHeadColWidthStyleStrategy())
                 .build()) {
 
-            WriteSheet sheet = EasyExcel.writerSheet("导出数据").build();
+            WriteSheet sheet = EasyExcel.writerSheet(0, getExportSheetName(exportParam)).build();
             setRowAccessWindowSize(writer);
 
-            int offset = 2, current = 1;
+            int offset = headList.stream().mapToInt(List::size).max().orElse(1), current = 1;
             t.setPageSize(EXPORT_MAX_COUNT);
 
             while (true) {
@@ -161,11 +167,8 @@ public abstract class BaseExportService {
 
                 t.setCurrent(current);
                 MergeResult mergeResult = func.apply(t);
-                if (CollectionUtils.isEmpty(mergeResult.getDataList())) {
-                    break;
-                }
-                // 写入数据
-                writer.write(mergeResult.getDataList(), sheet);
+                // Write headers even when no rows pass permissions; do not stop before later pages.
+                writeExportBatch(writer, sheet, mergeResult, exportParam);
                 // 执行合并策略
                 Sheet mergeSheet = writer.writeContext().writeWorkbookHolder().getWorkbook().getSheetAt(0);
                 SummaryMergeHandler strategy = new SummaryMergeHandler(mergeResult.getMergeRegions(), mergeColumns, getSummaryColIdx(headList, mergeColumns), offset);
@@ -244,12 +247,12 @@ public abstract class BaseExportService {
      * @return 导出任务ID
      */
     public String exportAllWithMergeStrategy(ExportDTO exportParam) {
-        List<List<String>> exportHeads = getExportMergeHeadList(exportParam.getHeadList(), exportParam.getOrgId(), exportParam.getFormKey());
+        List<List<String>> exportHeads = getExportMergeHeadList(exportParam.getHeadList(), exportParam.getOrgId(), exportParam.getFormKey(), exportParam.getLocale());
         List<Integer> mergeColumns = getMergeColumns(exportHeads);
         exportParam.setMergeHeads(getMergeHeads(exportParam.getHeadList(), exportParam.getFormKey(), exportParam.getOrgId()));
         return exportWithMergeStrategy(exportParam, (task) -> batchHandleDataWithMergeStrategy(processDuplicateLastLevelHeads(exportHeads), task, exportParam.getFileName(),
                 mergeColumns, exportParam.getPageRequest(),
-                t -> getExportMergeData(task.getId(), exportParam)));
+                t -> getExportMergeData(task.getId(), exportParam), exportParam));
     }
 
     /**
@@ -259,16 +262,16 @@ public abstract class BaseExportService {
      * @return 导出任务ID
      */
     public String exportSelectWithMergeStrategy(ExportDTO exportParam) {
-        List<List<String>> exportHeads = getExportMergeHeadList(exportParam.getHeadList(), exportParam.getOrgId(), exportParam.getFormKey());
+        List<List<String>> exportHeads = getExportMergeHeadList(exportParam.getHeadList(), exportParam.getOrgId(), exportParam.getFormKey(), exportParam.getLocale());
         List<Integer> mergeColumns = getMergeColumns(exportHeads);
         exportParam.setMergeHeads(getMergeHeads(exportParam.getHeadList(), exportParam.getFormKey(), exportParam.getOrgId()));
         return exportWithMergeStrategy(exportParam, (task) -> {
             File file = prepareExportFile(task.getFileId(), exportParam.getFileName(), task.getOrganizationId());
             try (ExcelWriter writer = EasyExcel.write(file).head(processDuplicateLastLevelHeads(exportHeads)).excelType(ExcelTypeEnum.XLSX)
                     .registerWriteHandler(new CustomHeadColWidthStyleStrategy()).build()) {
-                WriteSheet sheet = EasyExcel.writerSheet("导出数据").build();
+                WriteSheet sheet = EasyExcel.writerSheet(0, getExportSheetName(exportParam)).build();
                 setRowAccessWindowSize(writer);
-                AtomicInteger offset = new AtomicInteger(2);
+                AtomicInteger offset = new AtomicInteger(exportHeads.stream().mapToInt(List::size).max().orElse(1));
                 List<String> allSelectIds = exportParam.getSelectIds();
                 SubListUtils.dealForSubList(allSelectIds, SubListUtils.DEFAULT_EXPORT_BATCH_SIZE, (subIds) -> {
                     MergeResult mergeResult = new MergeResult();
@@ -280,7 +283,7 @@ public abstract class BaseExportService {
                         exportTaskService.update(task.getId(), ExportConstants.ExportStatus.STOP.toString(), exportParam.getUserId());
                     }
                     // 写入数据
-                    writer.write(mergeResult.getDataList(), sheet);
+                    writeExportBatch(writer, sheet, mergeResult, exportParam);
                     // 执行合并策略
                     Sheet mergeSheet = writer.writeContext().writeWorkbookHolder().getWorkbook().getSheetAt(0);
                     SummaryMergeHandler strategy = new SummaryMergeHandler(mergeResult.getMergeRegions(), mergeColumns, getSummaryColIdx(exportHeads, mergeColumns), offset.get());
@@ -289,6 +292,15 @@ public abstract class BaseExportService {
                 });
             }
         });
+    }
+
+    protected String getExportSheetName(ExportDTO exportParam) {
+        return "导出数据";
+    }
+
+    /** Domain exporters can add sheets to the same workbook for each permission-filtered batch. */
+    protected void writeExportBatch(ExcelWriter writer, WriteSheet sheet, MergeResult result, ExportDTO exportParam) {
+        writer.write(result.getDataList(), sheet);
     }
 
     public List<List<String>> processDuplicateLastLevelHeads(List<List<String>> exportHeads) {
@@ -332,6 +344,10 @@ public abstract class BaseExportService {
      * @param currentOrg 当前组织
      * @return 表头信息
      */
+    protected List<List<String>> getExportMergeHeadList(List<ExportHeadDTO> headList, String currentOrg, String formKey, Locale locale) {
+        return getExportMergeHeadList(headList, currentOrg, formKey);
+    }
+
     private List<List<String>> getExportMergeHeadList(List<ExportHeadDTO> headList, String currentOrg, String formKey) {
         return Objects.requireNonNull(CommonBeanFactory.getBean(ModuleFormService.class)).getAllExportHeads(headList, formKey, currentOrg);
     }

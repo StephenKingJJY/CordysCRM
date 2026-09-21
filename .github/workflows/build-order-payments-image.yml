@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - custom/order-payments
+      - custom/order-payment-export
   workflow_dispatch:
 
 permissions:
@@ -14,7 +15,24 @@ env:
   IMAGE_NAME: ghcr.io/stephenkingjjy/cordys-crm
 
 jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Prepare isolated test storage
+        run: |
+          sudo mkdir -p /opt/cordys/data/files /opt/cordys/logs/cordys-crm
+          sudo chown -R "$USER" /opt/cordys
+      - name: Backend regression tests
+        run: ./mvnw -f backend/pom.xml -pl crm -am test -DskipAntRunForJenkins
+
   build-and-push:
+    needs: backend-tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

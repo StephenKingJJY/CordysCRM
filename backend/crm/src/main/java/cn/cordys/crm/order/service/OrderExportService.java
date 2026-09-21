@@ -2,6 +2,10 @@ package cn.cordys.crm.order.service;
 
 import cn.cordys.common.constants.FormKey;
 import cn.cordys.common.dto.ExportDTO;
+import cn.cordys.common.dto.ExportHeadDTO;
+import cn.idev.excel.EasyExcel;
+import cn.idev.excel.ExcelWriter;
+import cn.idev.excel.write.metadata.WriteSheet;
 import cn.cordys.common.dto.FieldExportMeta;
 import cn.cordys.common.dto.stage.StageConfigResponse;
 import cn.cordys.common.service.BaseExportService;
@@ -11,6 +15,7 @@ import cn.cordys.crm.approval.service.ApprovalFlowService;
 import cn.cordys.crm.order.dto.request.OrderPageRequest;
 import cn.cordys.crm.order.dto.response.OrderListResponse;
 import cn.cordys.crm.order.mapper.ExtOrderMapper;
+import cn.cordys.crm.order.excel.OrderPaymentExportStyle;
 import cn.cordys.crm.order.mapper.ExtOrderStageConfigMapper;
 import cn.cordys.crm.system.excel.domain.MergeResult;
 import com.github.pagehelper.PageHelper;
@@ -22,6 +27,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -36,6 +42,8 @@ public class OrderExportService extends BaseExportService {
     private static final String STAGE_CONFIG_MAP_KEY = "stageConfigMap";
     @Resource
     private OrderService orderService;
+    @Resource
+    private OrderPaymentExportService paymentExportService;
     @Resource
     private ExtOrderMapper extOrderMapper;
     @Resource
@@ -54,19 +62,57 @@ public class OrderExportService extends BaseExportService {
         var filteredList = queryResult.getLeft();
         var queryCount = queryResult.getRight();
         if (CollectionUtils.isEmpty(filteredList)) {
-            return MergeResult.builder().dataList(List.of()).mergeRegions(List.of()).handleCount(0).queryCount(queryCount).build();
+            return new PaymentMergeResult(MergeResult.builder().dataList(List.of()).mergeRegions(List.of()).handleCount(0).queryCount(queryCount).build(), List.of());
         }
         var dataList = orderService.buildList(filteredList, exportParam.getOrgId());
+        var payments = paymentExportService.load(dataList, exportParam.getOrgId(), exportParam.getLocale());
         // 从缓存获取阶段配置，避免重复查询
         Map<String, String> stageConfigMap = getOrLoadStageConfigMap(exportParam);
         var result = buildExportMergeResult(taskId, exportParam, dataList,
                 OrderListResponse::getModuleFields,
-                (detail, fieldParam, metas, cache) -> buildDataWithSub(detail.getModuleFields(), fieldParam, metas,
-                        getSystemFieldMap(detail, metas, stageConfigMap, exportParam.getLocale()), cache));
+                (detail, fieldParam, metas, cache) -> paymentExportService.appendSummary(
+                        buildDataWithSub(detail.getModuleFields(), fieldParam, metas,
+                                getSystemFieldMap(detail, metas, stageConfigMap, exportParam.getLocale()), cache),
+                        payments.summaries().get(detail.getId())));
         result.setQueryCount(queryCount);
+        return new PaymentMergeResult(result, payments.details());
+    }
+
+
+    @Override
+    protected List<List<String>> getExportMergeHeadList(List<ExportHeadDTO> heads, String orgId, String formKey, Locale locale) {
+        var result = new ArrayList<>(super.getExportMergeHeadList(heads, orgId, formKey, locale));
+        result.addAll(paymentExportService.summaryHeads(locale));
         return result;
     }
 
+    @Override
+    protected String getExportSheetName(ExportDTO exportParam) {
+        return OrderPaymentExportService.label("ordersSheet", exportParam.getLocale());
+    }
+
+    @Override
+    protected void writeExportBatch(ExcelWriter writer, WriteSheet sheet, MergeResult result, ExportDTO exportParam) {
+        WriteSheet orderSheet = EasyExcel.writerSheet(0, getExportSheetName(exportParam))
+                .registerWriteHandler(new OrderPaymentExportStyle(false, exportParam.getExportMetas().size()))
+                .build();
+        super.writeExportBatch(writer, orderSheet, result, exportParam);
+        List<List<Object>> details = result instanceof PaymentMergeResult batch ? batch.details : List.of();
+        WriteSheet paymentSheet = EasyExcel.writerSheet(1,
+                        OrderPaymentExportService.label("detailsSheet", exportParam.getLocale()))
+                .head(paymentExportService.detailHeads(exportParam.getLocale()))
+                .registerWriteHandler(new OrderPaymentExportStyle(true, 0)).build();
+        writer.write(details, paymentSheet);
+    }
+
+    private static class PaymentMergeResult extends MergeResult {
+        private final List<List<Object>> details;
+
+        PaymentMergeResult(MergeResult source, List<List<Object>> details) {
+            super(source.getDataList(), source.getMergeRegions(), source.getHandleCount(), source.getQueryCount());
+            this.details = details;
+        }
+    }
 
     private Pair<List<OrderListResponse>, Integer> collectExportList(ExportDTO exportParam) {
         var orgId = exportParam.getOrgId();
