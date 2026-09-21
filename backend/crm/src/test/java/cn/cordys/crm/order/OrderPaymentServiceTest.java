@@ -26,8 +26,14 @@ class OrderPaymentServiceTest {
         var r = new OrderPaymentAddRequest(); r.setId("0123456789abcdef0123456789abcdef");
         r.setAmount(new BigDecimal("6000.00")); r.setReceivedDate(LocalDate.now()); r.setRemark("Shared transfer, allocated to A"); return r;
     }
+    private org.springframework.context.MessageSource previousMessages;
     @org.junit.jupiter.api.BeforeEach void translations() {
+        previousMessages = (org.springframework.context.MessageSource) org.springframework.test.util.ReflectionTestUtils.getField(
+                cn.cordys.common.util.Translator.class, "messageSource");
         new cn.cordys.common.util.Translator().setMessageSource(new org.springframework.context.support.StaticMessageSource());
+    }
+    @org.junit.jupiter.api.AfterEach void restoreTranslations() {
+        new cn.cordys.common.util.Translator().setMessageSource(previousMessages);
     }
     @Test void rejectsMissingOrOtherOrganizationOrderBeforeMutation() {
         assertThrows(cn.cordys.common.exception.GenericException.class,

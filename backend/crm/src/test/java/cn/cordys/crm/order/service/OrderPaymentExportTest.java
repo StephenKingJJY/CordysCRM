@@ -41,8 +41,10 @@ class OrderPaymentExportTest {
     ModuleFormService form;
     TestExporter exporter;
     MockedStatic<CommonBeanFactory> beans;
+    org.springframework.context.MessageSource previousMessages;
 
     @BeforeEach void setUp() {
+        previousMessages = (org.springframework.context.MessageSource) ReflectionTestUtils.getField(Translator.class, "messageSource");
         var messages = new ResourceBundleMessageSource();
         messages.setBasename("i18n/cordys-crm"); messages.setDefaultEncoding("UTF-8");
         new Translator().setMessageSource(messages);
@@ -68,7 +70,10 @@ class OrderPaymentExportTest {
         beans.when(() -> CommonBeanFactory.getBean(ModuleFormService.class)).thenReturn(form);
     }
 
-    @AfterEach void tearDown() { beans.close(); PageHelper.clearPage(); }
+    @AfterEach void tearDown() {
+        beans.close(); PageHelper.clearPage();
+        new Translator().setMessageSource(previousMessages);
+    }
 
     @Test void selectedWorkbookContainsScopedSummaryAndAllPaymentHistory() throws Exception {
         var a = order("a", "100"); var hidden = order("hidden", "500");
