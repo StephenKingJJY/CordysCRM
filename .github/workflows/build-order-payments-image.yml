@@ -17,6 +17,8 @@ env:
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
+    env:
+      JAVA_TOOL_OPTIONS: -Duser.language=zh -Duser.country=CN -Duser.timezone=Asia/Shanghai -Dfile.encoding=UTF-8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
