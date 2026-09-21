@@ -122,6 +122,8 @@ public class OrderService extends BaseExportService implements ApprovalResourceH
     @Resource
     private BaseMapper<Order> orderMapper;
     @Resource
+    private cn.cordys.crm.order.mapper.ExtOrderPaymentMapper orderPaymentMapper;
+    @Resource
     private BaseService baseService;
     @Resource
     private ModuleFormService moduleFormService;
@@ -473,6 +475,9 @@ public class OrderService extends BaseExportService implements ApprovalResourceH
     @Override
     @OperationLog(module = LogModule.ORDER_INDEX, type = LogType.DELETE, resourceId = "{#id}")
     public void delete(String id, String userId, String orgId) {
+        if (orderPaymentMapper.count(id) > 0) {
+            throw new GenericException(Translator.get("order.payment.delete.blocked"));
+        }
         Order order = orderMapper.selectByPrimaryKey(id);
         if (order == null) {
             throw new GenericException(CrmHttpResultCode.NOT_FOUND);

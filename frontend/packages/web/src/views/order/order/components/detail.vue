@@ -44,37 +44,51 @@
         :update-api="updateOrderStage"
         @load-detail="handleSaved()"
       />
-      <CrmCard contentHeight="100%" hide-footer :special-height="122" no-content-padding>
-        <CrmApprovalDetail
-          :form-key="FormDesignKeyEnum.ORDER"
-          :source-id="props.sourceId"
-          :refresh-key="approvalDetailRefreshKey"
-          :approval-status="detailInfo?.approvalStatus"
-          @saveApproval="handleSaveApproval"
-        >
-          <template #left="{ fieldPermissions, taskNode }">
-            <CrmFormDescription
-              ref="formDescriptionRef"
-              :form-key="FormDesignKeyEnum.ORDER_SNAPSHOT"
-              :source-id="props.sourceId"
-              :column="2"
-              :refresh-key="refreshKey"
-              refresh-form-config
-              :fieldPermissions="fieldPermissions"
-              :otherSaveParams="{
-                updateType: 'approval',
-                approvalTaskId: props.approvalTaskId || taskNode?.taskId,
-              }"
-              label-width="auto"
-              value-align="start"
-              tooltip-position="top-start"
-              :readonly="!hasAnyPermission(['ORDER:UPDATE'])"
-              @init="handleInit"
-              @open-contract-detail="handleOpenContractDrawer"
-              @open-customer-detail="handleOpenCustomerDrawer"
-            />
-          </template>
-        </CrmApprovalDetail>
+      <CrmCard no-content-padding hide-footer auto-height class="mb-[16px]">
+        <CrmTab v-model:active-tab="activeTab" no-content :tab-list="paymentTabs" type="line" />
+      </CrmCard>
+      <CrmCard contentHeight="100%" hide-footer :special-height="170" no-content-padding>
+        <div v-show="activeTab === 'details'" class="h-full">
+          <CrmApprovalDetail
+            :form-key="FormDesignKeyEnum.ORDER"
+            :source-id="props.sourceId"
+            :refresh-key="approvalDetailRefreshKey"
+            :approval-status="detailInfo?.approvalStatus"
+            @saveApproval="handleSaveApproval"
+          >
+            <template #left="{ fieldPermissions, taskNode }">
+              <CrmFormDescription
+                ref="formDescriptionRef"
+                :form-key="FormDesignKeyEnum.ORDER_SNAPSHOT"
+                :source-id="props.sourceId"
+                :column="2"
+                :refresh-key="refreshKey"
+                refresh-form-config
+                :fieldPermissions="fieldPermissions"
+                :otherSaveParams="{
+                  updateType: 'approval',
+                  approvalTaskId: props.approvalTaskId || taskNode?.taskId,
+                }"
+                label-width="auto"
+                value-align="start"
+                tooltip-position="top-start"
+                :readonly="!hasAnyPermission(['ORDER:UPDATE'])"
+                @init="handleInit"
+                @open-contract-detail="handleOpenContractDrawer"
+                @open-customer-detail="handleOpenCustomerDrawer"
+              />
+            </template>
+          </CrmApprovalDetail>
+        </div>
+        <div v-if="activeTab === 'payments'" class="h-full">
+          <OrderPayments
+            v-if="visible"
+            :order-id="props.sourceId"
+            :editable="!props.readonly && hasAnyPermission(['ORDER:UPDATE'])"
+            :api="paymentApi"
+            @changed="emit('refresh')"
+          />
+        </div>
       </CrmCard>
     </div>
 
@@ -105,6 +119,7 @@
 <script lang="ts" setup>
   import { NButton, useMessage } from 'naive-ui';
 
+  import OrderPayments from '@lib/shared/components/order-payments.vue';
   import { FormDesignKeyEnum } from '@lib/shared/enums/formDesignEnum';
   import { ProcessStatusEnum } from '@lib/shared/enums/process';
   import { useI18n } from '@lib/shared/hooks/useI18n';
@@ -118,6 +133,7 @@
   import CrmDrawer from '@/components/pure/crm-drawer/index.vue';
   import CrmIcon from '@/components/pure/crm-icon-font/index.vue';
   import type { ActionsItem } from '@/components/pure/crm-more-action/type';
+  import CrmTab from '@/components/pure/crm-tab/index.vue';
   import CrmApprovalDetail from '@/components/business/crm-approval/components/crm-approval-detail.vue';
   import CrmApprovalStatus from '@/components/business/crm-approval/components/crm-approval-status.vue';
   import CrmFormCreateDrawer from '@/components/business/crm-form-create-drawer/index.vue';
@@ -128,7 +144,16 @@
   import customerOverviewDrawer from '@/views/customer/components/customerOverviewDrawer.vue';
   import openSeaOverviewDrawer from '@/views/customer/components/openSeaOverviewDrawer.vue';
 
-  import { deleteOrder, getOpenSeaOptions, getOrderStatusConfig, updateOrderStage } from '@/api/modules';
+  import {
+    addOrderPayment,
+    deleteOrder,
+    downloadOrderPaymentReceipt,
+    getOpenSeaOptions,
+    getOrderPayments,
+    getOrderStatusConfig,
+    updateOrderStage,
+    voidOrderPayment,
+  } from '@/api/modules';
   import useApprovalOperation from '@/hooks/useApprovalOperation';
   import useApprovalResourceAction from '@/hooks/useApprovalResourceAction';
   import useModal from '@/hooks/useModal';
@@ -152,10 +177,21 @@
     required: true,
   });
 
+  const paymentApi = {
+    get: getOrderPayments,
+    add: addOrderPayment,
+    void: voidOrderPayment,
+    receipt: downloadOrderPaymentReceipt,
+  };
   const Message = useMessage();
   const { openModal } = useModal();
   const { t } = useI18n();
   const detailInfo = ref();
+  const activeTab = ref('details');
+  const paymentTabs = computed(() => [
+    { name: 'details', tab: t('orderPayment.orderDetails') },
+    { name: 'payments', tab: t('orderPayment.title') },
+  ]);
   const { openNewPage } = useOpenNewPage();
 
   const stageConfig = ref<OpportunityStageConfig>();

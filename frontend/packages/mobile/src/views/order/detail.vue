@@ -18,6 +18,7 @@
           </van-button>
         </template>
       </CrmDescription>
+      <OrderPayments :order-id="sourceId" :editable="hasAnyPermission(['ORDER:UPDATE'])" :api="paymentApi" />
     </div>
   </CrmPageWrapper>
 </template>
@@ -27,17 +28,26 @@
   import { useClipboard } from '@vueuse/core';
   import { showToast } from 'vant';
 
+  import OrderPayments from '@lib/shared/components/order-payments.vue';
   import { FormDesignKeyEnum } from '@lib/shared/enums/formDesignEnum';
   import { useI18n } from '@lib/shared/hooks/useI18n';
 
   import CrmDescription from '@/components/pure/crm-description/index.vue';
   import CrmPageWrapper from '@/components/pure/crm-page-wrapper/index.vue';
 
+  import { addOrderPayment, downloadOrderPaymentReceipt, getOrderPayments, voidOrderPayment } from '@/api/modules';
   import useFormCreateApi from '@/hooks/useFormCreateApi';
+  import { hasAnyPermission } from '@/utils/permission';
 
   import { OrderRouteEnum } from '@/enums/routeEnum';
 
   defineOptions({ name: OrderRouteEnum.ORDER_DETAIL });
+  const paymentApi = {
+    get: getOrderPayments,
+    add: addOrderPayment,
+    void: voidOrderPayment,
+    receipt: downloadOrderPaymentReceipt,
+  };
   const route = useRoute();
   const { t } = useI18n();
   const sourceId = computed(() => route.query.id?.toString() || '');
