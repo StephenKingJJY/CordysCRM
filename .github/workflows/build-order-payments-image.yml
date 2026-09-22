@@ -5,6 +5,7 @@ on:
     branches:
       - custom/order-payments
       - custom/order-payment-export
+      - custom/order-approval
   workflow_dispatch:
 
 permissions:

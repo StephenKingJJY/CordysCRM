@@ -10,6 +10,13 @@
     <div v-else class="order-detail pb-[24px]">
       <van-cell :title="t('mobileOrder.number')" :value="detail.number" />
       <van-cell :title="t('mobileOrder.status')" :value="detail.stageName || detail.stage" />
+      <van-cell :title="t('mobileOrder.approvalStatus')" :value="approvalLabel" />
+      <div v-if="canSubmit" class="p-[12px]">
+        <van-button block type="primary" :loading="submitting" :disabled="busy" @click="submitApproval">
+          {{ t('mobileOrder.submitApproval') }}
+        </van-button>
+        <p class="mt-[8px] text-[12px] text-[var(--text-n4)]">{{ t('mobileOrder.approvalHint') }}</p>
+      </div>
       <CrmDescription :description="visibleDescriptions">
         <template #tracking="{ item }">
           <div class="select-text break-all">{{ item.value || '-' }}</div>
@@ -35,7 +42,13 @@
   import CrmDescription from '@/components/pure/crm-description/index.vue';
   import CrmPageWrapper from '@/components/pure/crm-page-wrapper/index.vue';
 
-  import { addOrderPayment, downloadOrderPaymentReceipt, getOrderPayments, voidOrderPayment } from '@/api/modules';
+  import {
+    addOrderPayment,
+    downloadOrderPaymentReceipt,
+    getOrderPayments,
+    reviewResource,
+    voidOrderPayment,
+  } from '@/api/modules';
   import useFormCreateApi from '@/hooks/useFormCreateApi';
   import { hasAnyPermission } from '@/utils/permission';
 
@@ -58,6 +71,13 @@
   });
   const busy = ref(false);
   const failed = ref(false);
+  const submitting = ref(false);
+  const approvalLabel = computed(() => t(`mobileOrder.approval.${detail.value.approvalStatus || 'NONE'}`));
+  const canSubmit = computed(
+    () =>
+      ['PENDING', 'UNAPPROVED', 'REVOKED'].includes(detail.value.approvalStatus) && hasAnyPermission(['ORDER:UPDATE'])
+  );
+
   const { copy } = useClipboard({ legacy: true });
   const visibleDescriptions = computed(() =>
     descriptions.value
@@ -94,6 +114,20 @@
     }
   }
 
+  async function submitApproval() {
+    if (submitting.value || busy.value || !canSubmit.value) return;
+    submitting.value = true;
+    try {
+      await reviewResource({ resourceId: sourceId.value, formKey: FormDesignKeyEnum.ORDER });
+      showToast(t('mobileOrder.approvalSubmitted'));
+      await load();
+    } catch {
+      showToast(t('mobileOrder.approvalSubmitFailed'));
+      await load();
+    } finally {
+      submitting.value = false;
+    }
+  }
   onMounted(load);
 </script>
 

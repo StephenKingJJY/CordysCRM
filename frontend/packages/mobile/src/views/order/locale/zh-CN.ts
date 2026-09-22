@@ -1,4 +1,18 @@
 export default {
+  'mobileOrder.approvalStatus': '审批状态',
+  'mobileOrder.submitApproval': '提交审批',
+  'mobileOrder.approvalHint': '审批通过后才会同步到领星。',
+  'mobileOrder.approvalSubmitted': '已提交审批',
+  'mobileOrder.approvalSubmitFailed': '提交结果未确认，已刷新订单，请核对审批状态后重试。',
+  'mobileOrder.approval.NONE': '无需审批',
+  'mobileOrder.approval.PENDING': '待提审',
+  'mobileOrder.approval.APPROVING': '审批中',
+  'mobileOrder.approval.APPROVED': '已通过',
+  'mobileOrder.approval.UNAPPROVED': '已驳回',
+  'mobileOrder.approval.REVOKED': '已撤销',
+  'mobileOrder.approval.AUTO_APPROVED': '自动通过',
+  'mobileOrder.approval.AUTO_UNAPPROVED': '自动拒绝',
+
   'orderPayment.title': '回款明细',
   'orderPayment.orderDetails': '订单信息',
   'orderPayment.refresh': '刷新',

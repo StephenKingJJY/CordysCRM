@@ -1,4 +1,19 @@
 export default {
+  'mobileOrder.approvalStatus': 'Approval status',
+  'mobileOrder.submitApproval': 'Submit for approval',
+  'mobileOrder.approvalHint': 'Orders synchronize to Lingxing after approval.',
+  'mobileOrder.approvalSubmitted': 'Submitted for approval',
+  'mobileOrder.approvalSubmitFailed':
+    'Submission could not be confirmed. The order was refreshed; check its status before retrying.',
+  'mobileOrder.approval.NONE': 'Not required',
+  'mobileOrder.approval.PENDING': 'Awaiting submission',
+  'mobileOrder.approval.APPROVING': 'In review',
+  'mobileOrder.approval.APPROVED': 'Approved',
+  'mobileOrder.approval.UNAPPROVED': 'Rejected',
+  'mobileOrder.approval.REVOKED': 'Revoked',
+  'mobileOrder.approval.AUTO_APPROVED': 'Automatically approved',
+  'mobileOrder.approval.AUTO_UNAPPROVED': 'Automatically rejected',
+
   'orderPayment.title': 'Payments',
   'orderPayment.orderDetails': 'Order details',
   'orderPayment.refresh': 'Refresh',
