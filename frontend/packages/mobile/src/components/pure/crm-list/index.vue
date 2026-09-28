@@ -60,33 +60,40 @@
   const code = ref(0); // 状态码
 
   const originData = ref<any[]>([]);
+  const searchKeyword = ref('');
+  let generation = 0;
+  let inFlight = false;
   async function loadList(refresh = false) {
     if (props.closeInitLoad) return;
+    if (!refresh && inFlight) return;
+    const requestGeneration = refresh ? ++generation : generation;
+    const page = refresh ? 1 : currentPage.value + 1;
+    if (page === 1) searchKeyword.value = (props.listParams?.keyword ?? props.keyword ?? '').trim();
+    inFlight = true;
     try {
-      list.value = [];
       if (!props.loadListApi) {
         list.value = props.transform ? list.value.map((e: any) => props.transform!(e)) : list.value;
-        originData.value = list.value;
+        originData.value = cloneDeep(list.value);
         finished.value = true;
         return;
       }
 
       loading.value = true;
       if (refresh) {
-        currentPage.value = 1;
+        list.value = [];
+        currentPage.value = 0;
         finished.value = false;
-      } else {
-        currentPage.value += 1;
       }
-      if (currentPage.value === 1 && !refreshing.value && !props.notShowLoadingToast) {
+      if (page === 1 && !refreshing.value && !props.notShowLoadingToast) {
         showLoadingToast(t('common.loading'));
       }
       const res = await props.loadListApi({
-        keyword: props.keyword,
         ...props.listParams,
+        keyword: searchKeyword.value,
         pageSize: 20,
-        current: currentPage.value,
+        current: page,
       });
+      if (requestGeneration !== generation) return;
       if (props?.isReturnNativeResponse) {
         code.value = res.data.code;
       }
@@ -100,10 +107,12 @@
       } else {
         list.value = list.value.concat(dataList);
       }
-      finished.value = props.noPageNation || data.total <= currentPage.value * 20;
+      currentPage.value = page;
+      finished.value = props.noPageNation || resList.length === 0 || data.total <= page * 20;
       error.value = false;
-      originData.value = cloneDeep(dataList);
+      originData.value = cloneDeep(list.value);
     } catch (_error: any) {
+      if (requestGeneration !== generation) return;
       // eslint-disable-next-line no-console
       console.log(_error);
       error.value = true;
@@ -111,13 +120,20 @@
         code.value = _error.code;
       }
     } finally {
-      loading.value = false;
-      refreshing.value = false;
-      closeToast();
+      if (requestGeneration === generation) {
+        inFlight = false;
+        loading.value = false;
+        refreshing.value = false;
+        closeToast();
+      }
     }
   }
 
   function filterListByKeyword(keywordKeys: string | string[]) {
+    // Paged sources must search the full server-side dataset, not the loaded page.
+    if (props.loadListApi && !props.noPageNation) {
+      return loadList(true);
+    }
     if (!props.keyword?.trim()?.length) {
       if (props.loadListApi) {
         loadList(true);

@@ -44,6 +44,7 @@
             })
           "
           @search="search"
+          @clear="search"
         />
         <div class="flex-1 overflow-hidden px-[16px]">
           <CrmSelectList
