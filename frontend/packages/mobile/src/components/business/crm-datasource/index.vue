@@ -204,7 +204,8 @@
     };
   }
 
-  function search() {
+  async function search() {
+    await nextTick();
     crmSelectListRef.value?.filterListByKeyword('name');
   }
 
