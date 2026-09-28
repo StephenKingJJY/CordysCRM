@@ -134,6 +134,13 @@
 <style lang="less" scoped>
   .order-detail {
     word-break: break-word;
+    // This description shares the page with payments; a full-height description
+    // grows with the payment form and creates a blank gap before the form.
+    :deep(.van-cell-group),
+    :deep(.crm-description) {
+      overflow: visible;
+      height: auto;
+    }
     :deep(.crm-description-value) {
       min-width: 0;
       overflow-wrap: anywhere;
