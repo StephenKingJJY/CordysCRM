@@ -17,6 +17,10 @@
         </van-button>
         <p class="mt-[8px] text-[12px] text-[var(--text-n4)]">{{ t('mobileOrder.approvalHint') }}</p>
       </div>
+      <OrderApprovalProgress
+        v-if="detail.approvalStatus && !['NONE', 'PENDING'].includes(detail.approvalStatus)"
+        :order-id="sourceId"
+      />
       <CrmDescription :description="visibleDescriptions">
         <template #tracking="{ item }">
           <div class="select-text break-all">{{ item.value || '-' }}</div>
@@ -41,6 +45,7 @@
 
   import CrmDescription from '@/components/pure/crm-description/index.vue';
   import CrmPageWrapper from '@/components/pure/crm-page-wrapper/index.vue';
+  import OrderApprovalProgress from './approval-progress.vue';
 
   import {
     addOrderPayment,
