@@ -1,4 +1,6 @@
-FROM --platform=linux/amd64 1panel/cordys-crm:latest AS official-assets
+# Pin the auxiliary JAR source used by the verified 2026-09-28 release.
+# Newer upstream images no longer include the cockpit JAR at this path.
+FROM --platform=linux/amd64 1panel/cordys-crm@sha256:f329cff673897c28def4bc5c434b2db9a9c86b04992762e34aee43a2f298947d AS official-assets
 
 FROM --platform=${BUILDPLATFORM} node:22-slim AS frontend
 
