@@ -1,5 +1,10 @@
 <template>
   <n-spin :show="loading" class="h-full" :description="props.loadingDescription">
+    <OrderSyncApprovalNotice
+      v-if="props.orderSyncApprovalNotice"
+      :stage="detail.stage"
+      :approval-status="detail.approvalStatus"
+    />
     <CrmDescription
       :descriptions="realDescriptions"
       :value-align="props.valueAlign ?? 'end'"
@@ -305,10 +310,12 @@
   import { NButton, NImage, NImageGroup, NSpace, NSpin, NTooltip, useMessage } from 'naive-ui';
 
   import { PreviewPictureUrl } from '@lib/shared/api/requrls/system/module';
+  import OrderSyncApprovalNotice from '@lib/shared/components/order-sync-approval-notice.vue';
   import { FieldDataSourceTypeEnum, FieldTypeEnum, FormDesignKeyEnum } from '@lib/shared/enums/formDesignEnum';
   import { ApprovalFieldPermissionModeEnum } from '@lib/shared/enums/process';
   import { useI18n } from '@lib/shared/hooks/useI18n';
   import { isNotEmpty } from '@lib/shared/method/is.js';
+  import { orderSyncApprovalState, orderSyncHistoryDescription } from '@lib/shared/method/orderSyncPresentation';
   import { CollaborationType } from '@lib/shared/models/customer';
   import type { FormConfig } from '@lib/shared/models/system/module';
   import type { ApprovalFieldPermission } from '@lib/shared/models/system/process';
@@ -368,6 +375,7 @@
       otherSaveParams?: Record<string, any>;
       customFormId?: string;
       refreshFormConfig?: boolean; // 用于更新后刷新表单(快照)配置
+      orderSyncApprovalNotice?: boolean;
     }>(),
     {
       oneLineLabel: true,
@@ -454,7 +462,16 @@
           };
         }
         return item;
-      });
+      })
+      .map((item) =>
+        orderSyncHistoryDescription(
+          item,
+          props.orderSyncApprovalNotice
+            ? orderSyncApprovalState(detail.value.stage, detail.value.approvalStatus)
+            : undefined,
+          t
+        )
+      );
   });
   const isInit = ref(false);
 

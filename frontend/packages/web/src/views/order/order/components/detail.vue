@@ -64,6 +64,7 @@
                 :column="2"
                 :refresh-key="refreshKey"
                 refresh-form-config
+                order-sync-approval-notice
                 :fieldPermissions="fieldPermissions"
                 :otherSaveParams="{
                   updateType: 'approval',

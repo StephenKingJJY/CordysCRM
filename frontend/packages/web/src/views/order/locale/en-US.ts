@@ -1,4 +1,16 @@
 export default {
+  'orderSync.currentStatus': 'Current-round sync status',
+  'orderSync.pending': 'Not submitted for approval; this round is not synced',
+  'orderSync.approving': 'Waiting for approval; this round is not synced',
+  'orderSync.rejected': 'Approval rejected; this round will not sync',
+  'orderSync.revoked': 'Approval revoked; this round will not sync',
+  'orderSync.manual': 'Waiting for manual approval; this round is not synced',
+  'orderSync.historyHint':
+    'Approval is incomplete, so no new Lingxing order will be created. Any previous sync information below is historical and does not indicate that this round has synced.',
+  'orderSync.previousStatus': 'Previous Lingxing sync result',
+  'orderSync.previousTime': 'Previous Lingxing sync time',
+  'orderSync.previousError': 'Previous Lingxing sync error',
+  'orderSync.previousNumber': 'Previous Lingxing order number',
   'orderPayment.title': 'Payments',
   'orderPayment.orderDetails': 'Order details',
   'orderPayment.refresh': 'Refresh',

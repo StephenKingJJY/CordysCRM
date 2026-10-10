@@ -21,6 +21,7 @@
         v-if="detail.approvalStatus && !['NONE', 'PENDING'].includes(detail.approvalStatus)"
         :order-id="sourceId"
       />
+      <OrderSyncApprovalNotice :stage="detail.stage" :approval-status="detail.approvalStatus" />
       <CrmDescription :description="visibleDescriptions">
         <template #tracking="{ item }">
           <div class="select-text break-all">{{ item.value || '-' }}</div>
@@ -40,8 +41,10 @@
   import { showToast } from 'vant';
 
   import OrderPayments from '@lib/shared/components/order-payments.vue';
+  import OrderSyncApprovalNotice from '@lib/shared/components/order-sync-approval-notice.vue';
   import { FormDesignKeyEnum } from '@lib/shared/enums/formDesignEnum';
   import { useI18n } from '@lib/shared/hooks/useI18n';
+  import { orderSyncApprovalState, orderSyncHistoryDescription } from '@lib/shared/method/orderSyncPresentation';
 
   import CrmDescription from '@/components/pure/crm-description/index.vue';
   import CrmPageWrapper from '@/components/pure/crm-page-wrapper/index.vue';
@@ -88,7 +91,11 @@
     descriptions.value
       .filter((item) => item.fieldInfo?.mobile !== false)
       .map((item) => ({
-        ...item,
+        ...orderSyncHistoryDescription(
+          item,
+          orderSyncApprovalState(detail.value.stage, detail.value.approvalStatus),
+          t
+        ),
         valueSlotName: item.fieldInfo?.internalKey === 'lingxingTrackingNumber' ? 'tracking' : undefined,
       }))
   );
