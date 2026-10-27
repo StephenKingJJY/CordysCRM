@@ -58,7 +58,14 @@
             :load-list-api="sourceApi[props.dataSourceType]"
             :transform="selectListTransform"
             :no-page-nation="props.noPageNation"
-          ></CrmSelectList>
+          >
+            <template #label="{ item }">
+              <span>{{ item.name }}</span>
+              <div v-if="showStock && stockFieldId" class="mt-[4px] text-[12px] text-[var(--text-n3)]">
+                {{ stockText(item) }}
+              </div>
+            </template>
+          </CrmSelectList>
         </div>
       </div>
       <template #footer>
@@ -91,6 +98,7 @@
 
   import { FieldDataSourceTypeEnum } from '@lib/shared/enums/formDesignEnum';
   import { useI18n } from '@lib/shared/hooks/useI18n';
+  import { referenceStockField, referenceStockValue } from '@lib/shared/method/referenceStock';
   import type { CommonList } from '@lib/shared/models/common';
 
   import CrmPageWrapper from '@/components/pure/crm-page-wrapper/index.vue';
@@ -111,6 +119,7 @@
     getFieldPriceList,
     getFieldProductList,
     getFieldQuotationList,
+    getProductFormConfig,
     getUserOptions,
   } from '@/api/modules';
 
@@ -126,6 +135,7 @@
     disabledSelection?: (item: Record<string, any>) => boolean;
     class?: string;
     listParams?: Record<string, any>;
+    showReferenceStock?: boolean;
   }>();
   const emit = defineEmits<{
     (e: 'change', value: string | string[]): void;
@@ -146,6 +156,18 @@
   const crmSelectListRef = ref<InstanceType<typeof CrmSelectList>>();
   const showPicker = ref(false);
   const keyword = ref('');
+  const stockFieldId = ref<string>();
+  const showStock = computed(
+    () => props.showReferenceStock && props.dataSourceType === FieldDataSourceTypeEnum.PRODUCT
+  );
+
+  function stockText(item: Record<string, unknown>) {
+    return `${t('datasource.referenceStock')}：${referenceStockValue(item, stockFieldId.value) ?? '-'}`;
+  }
+
+  function selectedName(item: Record<string, any>) {
+    return showStock.value && stockFieldId.value ? `${item.name}（${stockText(item)}）` : item.name;
+  }
 
   const typeLocaleMap = {
     [FieldDataSourceTypeEnum.CUSTOMER]: 'formCreate.customer',
@@ -186,7 +208,7 @@
   function onConfirm() {
     showPicker.value = false;
     selectedRows.value = pickerSelectedRows.value;
-    fieldValue.value = pickerSelectedRows.value.map((item) => item.name).join('；');
+    fieldValue.value = pickerSelectedRows.value.map(selectedName).join('；');
     value.value = props.multiple ? pickerSelectedRows.value.map((item) => item.id) : pickerSelectedRows.value[0].id;
     emit('change', value.value);
   }
@@ -209,9 +231,17 @@
     crmSelectListRef.value?.filterListByKeyword('name');
   }
 
-  function handleClick() {
+  async function handleClick() {
     if (!props.disabled) {
       showPicker.value = true;
+      if (showStock.value) {
+        try {
+          const config = await getProductFormConfig();
+          stockFieldId.value = referenceStockField(config.fields)?.id;
+        } catch {
+          stockFieldId.value = undefined;
+        }
+      }
     }
   }
 
@@ -220,7 +250,7 @@
     (val) => {
       fieldValue.value = val
         .filter((e) => value.value.includes(e.id))
-        .map((item) => item.name)
+        .map(selectedName)
         .join('；');
       pickerSelectedRows.value = val;
     },

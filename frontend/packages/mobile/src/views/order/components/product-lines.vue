@@ -21,6 +21,7 @@
           :value="String(row[key(field)] || '')"
           :label="field.name"
           :data-source-type="field.dataSourceType as FieldDataSourceTypeEnum"
+          :show-reference-stock="field.internalKey === 'orderProduct'"
           :disabled="field.editable === false || fieldConfig.editable === false"
           :rules="[{ required: true, message: t('mobileOrder.productRequired') }]"
           @update:value="row[key(field)] = Array.isArray($event) ? $event[0] : $event"

@@ -569,6 +569,18 @@
       }
     });
 
+    const stockField = allFields.find(
+      (field) => field.internalKey === 'lingxingReferenceStock' && field.readable !== false && field.show !== false
+    );
+    if (
+      props.sourceType === FieldDataSourceTypeEnum.PRODUCT &&
+      props.fieldConfig?.internalKey === 'orderProduct' &&
+      stockField &&
+      !appendedKeys.has(stockField.id)
+    ) {
+      resolvedColumns.push(buildFieldColumn(stockField));
+    }
+
     if (resolvedColumns.length === 0 && defaultColumn) {
       return [defaultColumn];
     }
