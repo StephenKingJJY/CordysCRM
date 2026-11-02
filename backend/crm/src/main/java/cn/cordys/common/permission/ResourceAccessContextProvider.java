@@ -24,6 +24,10 @@ public interface ResourceAccessContextProvider {
      */
     ResourceAccessContext getAccessContext(String resourceId, String orgId);
 
+    default boolean hasSharedDataPermission(String permission, String resourceId, String userId, String orgId) {
+        return false;
+    }
+
     /**
      * 批量获取资源负责人ID
      * <p>

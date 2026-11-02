@@ -56,7 +56,11 @@ public class CsPermissionAspect {
             // 从方法参数中解析资源ID
             String resourceId = resolveResourceId(method, joinPoint.getArgs(), resourceIdExpr);
             // 校验 (1 && 2 && 3)
-            resourcePermissionService.checkResourcePermission(permission, resourceId, formType, userId, orgId);
+            if (annotation.allowSharedUpdate()) {
+                resourcePermissionService.checkSharedUpdatePermission(permission, resourceId, formType, userId, orgId);
+            } else {
+                resourcePermissionService.checkResourcePermission(permission, resourceId, formType, userId, orgId);
+            }
         }
     }
 

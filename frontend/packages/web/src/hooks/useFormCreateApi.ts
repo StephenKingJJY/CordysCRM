@@ -984,6 +984,13 @@ export default function useFormCreateApi(props: FormCreateApiProps) {
       collaborationType.value = res.collaborationType;
       sourceName.value = res.name;
       fieldList.value.forEach((item) => {
+        if (
+          props.formKey.value === FormDesignKeyEnum.ORDER &&
+          res.sharedAccessOnly &&
+          ['orderOwner', 'orderCustomer'].includes(item.internalKey || '')
+        ) {
+          item.editable = false;
+        }
         if ([FieldTypeEnum.SUB_PRICE, FieldTypeEnum.SUB_PRODUCT].includes(item.type) && item.subFields?.length) {
           // 子表字段处理
           if (item.businessKey) {

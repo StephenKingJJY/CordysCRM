@@ -45,4 +45,10 @@ public class OrderListResponse extends Order {
 
 	@Schema(description = "审批第一个节点是否通过")
 	private Boolean firstApproved;
+
+    @Schema(description = "仅通过客户关系取得订单查看权限")
+    private Boolean sharedAccessOnly = false;
+
+    @Schema(description = "客户关系允许编辑订单资料，仍须校验角色及审批状态")
+    private Boolean sharedEditable = false;
 }

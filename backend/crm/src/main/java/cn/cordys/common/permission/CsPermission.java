@@ -35,4 +35,7 @@ public @interface CsPermission {
      * 为空时跳过审批状态权限校验
      */
     String formType() default "";
+
+    /** Opt in only for ordinary order edits, not approvals, payments or exports. */
+    boolean allowSharedUpdate() default false;
 }

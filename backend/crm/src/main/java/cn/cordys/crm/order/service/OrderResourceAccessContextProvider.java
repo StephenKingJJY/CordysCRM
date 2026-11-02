@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
@@ -17,6 +18,9 @@ public class OrderResourceAccessContextProvider implements ResourceAccessContext
 
     @Resource
     private BaseMapper<Order> orderMapper;
+
+    @Resource
+    private OrderCustomerAccessService customerAccessService;
 
     @Override
     public String getFormType() {
@@ -26,13 +30,18 @@ public class OrderResourceAccessContextProvider implements ResourceAccessContext
     @Override
     public ResourceAccessContext getAccessContext(String resourceId, String orgId) {
         Order order = orderMapper.selectByPrimaryKey(resourceId);
-        if (order == null) {
+        if (order == null || !Objects.equals(order.getOrganizationId(), orgId)) {
             return null;
         }
         ResourceAccessContext context = new ResourceAccessContext();
         context.setOwnerId(order.getOwner());
         context.setApprovalStatus(order.getApprovalStatus());
         return context;
+    }
+
+    @Override
+    public boolean hasSharedDataPermission(String permission, String resourceId, String userId, String orgId) {
+        return customerAccessService.hasAccess(orderMapper.selectByPrimaryKey(resourceId), permission, userId, orgId);
     }
 
     @Override

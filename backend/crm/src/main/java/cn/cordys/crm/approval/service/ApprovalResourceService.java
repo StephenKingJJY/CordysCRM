@@ -1113,7 +1113,12 @@ public class ApprovalResourceService {
         if (provider != null) {
             ResourceAccessContext context = provider.getAccessContext(resourceId, orgId);
             String ownerId = context != null ? context.getOwnerId() : null;
-            return !StringUtils.isNotBlank(ownerId) || dataScopeService.hasDataPermission(userId, orgId, ownerId, readPermission);
+            if (FormKey.ORDER.getKey().equals(formType) && context == null) {
+                return false;
+            }
+            return !StringUtils.isNotBlank(ownerId)
+                    || dataScopeService.hasDataPermission(userId, orgId, ownerId, readPermission)
+                    || provider.hasSharedDataPermission(readPermission, resourceId, userId, orgId);
         }
 
         return true;

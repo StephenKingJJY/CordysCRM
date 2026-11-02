@@ -1,6 +1,8 @@
 package cn.cordys.common.permission;
 
 import cn.cordys.common.exception.GenericException;
+import cn.cordys.common.constants.PermissionConstants;
+import cn.cordys.common.constants.FormKeyConstants;
 import cn.cordys.common.response.result.CrmHttpResultCode;
 import cn.cordys.common.service.DataScopeService;
 import cn.cordys.crm.approval.constants.ApprovalStatus;
@@ -55,6 +57,15 @@ public class ResourcePermissionService {
      * @param orgId      组织ID
      */
     public void checkResourcePermission(String permission, String resourceId, String formType, String userId, String orgId) {
+        checkResourcePermission(permission, resourceId, formType, userId, orgId, false);
+    }
+
+    public void checkSharedUpdatePermission(String permission, String resourceId, String formType, String userId, String orgId) {
+        checkResourcePermission(permission, resourceId, formType, userId, orgId, true);
+    }
+
+    private void checkResourcePermission(String permission, String resourceId, String formType, String userId, String orgId,
+                                         boolean allowSharedUpdate) {
         if (StringUtils.isBlank(resourceId)) {
             checkPermission(permission);
             return;
@@ -72,7 +83,13 @@ public class ResourcePermissionService {
 
         ResourceAccessContextProvider provider = getProvider(formType);
         ResourceAccessContext context = provider != null ? provider.getAccessContext(resourceId, orgId) : null;
-        boolean permitted = checkRoleAndDataAndStatusPermission(permission, formType, userId, orgId, context);
+        if (provider != null && context == null && FormKeyConstants.ORDER.equals(formType)) {
+            throw new GenericException(CrmHttpResultCode.FORBIDDEN);
+        }
+        boolean shared = provider != null
+                && (PermissionConstants.ORDER_READ.equals(permission) || allowSharedUpdate)
+                && provider.hasSharedDataPermission(permission, resourceId, userId, orgId);
+        boolean permitted = checkRoleAndDataAndStatusPermission(permission, formType, userId, orgId, context, shared);
 
         if (!permitted) {
             throw new GenericException(CrmHttpResultCode.FORBIDDEN);
@@ -142,7 +159,7 @@ public class ResourcePermissionService {
      * 校验角色权限位 + 数据权限 + 审批状态权限：(1 && 2 && 3)
      */
     private boolean checkRoleAndDataAndStatusPermission(String permission, String formType,
-                                                        String userId, String orgId, ResourceAccessContext context) {
+                                                        String userId, String orgId, ResourceAccessContext context, boolean shared) {
 
         String ownerId = context != null ? context.getOwnerId() : null;
         String approvalStatus = context != null ? context.getApprovalStatus() : null;
@@ -153,7 +170,7 @@ public class ResourcePermissionService {
         }
 
         // Check 2: 角色的数据权限
-        if (ownerId != null && !dataScopeService.hasDataPermission(userId, orgId, ownerId, permission)) {
+        if (ownerId != null && !dataScopeService.hasDataPermission(userId, orgId, ownerId, permission) && !shared) {
             return false;
         }
 

@@ -10,10 +10,10 @@ public class OrderPageRequest extends BasePageRequest {
 
     @Schema(description = "看板模式")
     private Boolean board = false;
-    public String getCustomerId() {
-        return null;
-    }
-    public String getContractId() {
-        return null;
-    }
+
+    @Schema(description = "关联客户id")
+    private String customerId;
+
+    @Schema(description = "关联合同id")
+    private String contractId;
 }

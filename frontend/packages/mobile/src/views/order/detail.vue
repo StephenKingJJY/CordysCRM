@@ -30,7 +30,11 @@
           </van-button>
         </template>
       </CrmDescription>
-      <OrderPayments :order-id="sourceId" :editable="hasAnyPermission(['ORDER:UPDATE'])" :api="paymentApi" />
+      <OrderPayments
+        :order-id="sourceId"
+        :editable="!detail.sharedAccessOnly && hasAnyPermission(['ORDER:UPDATE'])"
+        :api="paymentApi"
+      />
     </div>
   </CrmPageWrapper>
 </template>
@@ -83,7 +87,9 @@
   const approvalLabel = computed(() => t(`mobileOrder.approval.${detail.value.approvalStatus || 'NONE'}`));
   const canSubmit = computed(
     () =>
-      ['PENDING', 'UNAPPROVED', 'REVOKED'].includes(detail.value.approvalStatus) && hasAnyPermission(['ORDER:UPDATE'])
+      !detail.value.sharedAccessOnly &&
+      ['PENDING', 'UNAPPROVED', 'REVOKED'].includes(detail.value.approvalStatus) &&
+      hasAnyPermission(['ORDER:UPDATE'])
   );
 
   const { copy } = useClipboard({ legacy: true });

@@ -2,9 +2,61 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="cn.cordys.crm.order.mapper.ExtOrderMapper">
+    <sql id="customerOrderReadAccess">
+        exists (
+            select 1 from customer access_customer
+            where access_customer.id = so.customer_id
+              and access_customer.organization_id = so.organization_id
+              and (
+                access_customer.owner = #{userId}
+                or exists (
+                    select 1 from customer_collaboration access_link
+                    where access_link.customer_id = access_customer.id
+                      and access_link.user_id = #{userId}
+                      and access_link.collaboration_type in ('READ_ONLY', 'COLLABORATION')
+                )
+              )
+        )
+    </sql>
+
+    <sql id="listDataScope">
+        <choose>
+            <when test="dataPermission != null and dataPermission.invisible">
+                and 1 = 0
+            </when>
+            <when test="dataPermission != null and dataPermission.self">
+                and (so.owner = #{userId}
+                <if test="dataPermission.includeCustomerOrders">
+                    or <include refid="customerOrderReadAccess"/>
+                </if>
+                )
+            </when>
+            <when test="dataPermission != null and dataPermission.deptIds.size() > 0">
+                and (
+                    exists (
+                        select 1 from sys_organization_user scope_user
+                        where scope_user.user_id = so.owner and scope_user.organization_id = #{orgId}
+                        and (scope_user.department_id in
+                            <foreach collection="dataPermission.deptIds" item="deptId" open="(" close=")" separator=",">
+                                #{deptId}
+                            </foreach>
+                            <if test="dataPermission.viewId != 'DEPARTMENT'">
+                                or scope_user.user_id = #{userId}
+                            </if>
+                        )
+                    )
+                    <if test="dataPermission.includeCustomerOrders">
+                        or <include refid="customerOrderReadAccess"/>
+                    </if>
+                )
+            </when>
+        </choose>
+    </sql>
+
     <select id="list" resultType="cn.cordys.crm.order.dto.response.OrderListResponse">
         SELECT
         so.id,
+        so.organization_id,
         so.name,
         so.customer_id,
         so.contract_id,
@@ -41,19 +93,8 @@
             <property name="sort" value="request.sort"/>
         </include>
 
-        <if test="dataPermission != null and dataPermission.deptIds.size() > 0">
-            join sys_organization_user on so.owner = sys_organization_user.user_id
-            and (
-            sys_organization_user.department_id in
-            <foreach collection="dataPermission.deptIds" item="deptId" open="(" close=")" separator=",">
-                #{deptId}
-            </foreach>
-            <if test="dataPermission.viewId != 'DEPARTMENT'">
-                or sys_organization_user.user_id = #{userId}
-            </if>
-            )
-        </if>
         where so.organization_id = #{orgId}
+        <include refid="listDataScope"/>
 
         <if test="request.customerId != null and request.customerId != ''">
             and so.customer_id = #{request.customerId}
@@ -61,10 +102,6 @@
 
         <if test="request.contractId != null and request.contractId != ''">
             and so.contract_id = #{request.contractId}
-        </if>
-
-        <if test="dataPermission != null and dataPermission.self">
-            and so.owner = #{userId}
         </if>
 
         <if test="!source and request.keyword != null and request.keyword != ''">
@@ -496,29 +533,23 @@
             <property name="conditions" value="request.viewCombineSearch.conditions"/>
             <property name="tablePrefix" value="viewCombine"/>
         </include>
-        <if test="dataPermission != null and dataPermission.deptIds.size() > 0">
-            join sys_organization_user on so.owner = sys_organization_user.user_id
-            and (
-            sys_organization_user.department_id in
-            <foreach collection="dataPermission.deptIds" item="deptId" open="(" close=")" separator=",">
-                #{deptId}
-            </foreach>
-            <if test="dataPermission.viewId == 'ALL'">
-                or sys_organization_user.user_id = #{userId}
-            </if>
-            )
-        </if>
-
         where so.organization_id = #{orgId}
+        <include refid="listDataScope"/>
 
-        <if test="dataPermission != null and dataPermission.self">
-            and so.owner = #{userId}
+        <if test="dataPermission != null and dataPermission.includeCustomerOrders">
+            <if test="request.customerId != null and request.customerId != ''">
+                and so.customer_id = #{request.customerId}
+            </if>
+            <if test="request.contractId != null and request.contractId != ''">
+                and so.contract_id = #{request.contractId}
+            </if>
         </if>
 
         <if test="request.keyword != null and request.keyword != ''">
             and (
             so.name like concat('%', #{request.keyword},'%')
-            or so.name like concat('%', #{request.keyword},'%')
+            or c.name like concat('%', #{request.keyword},'%')
+            or cc.name like concat('%', #{request.keyword},'%')
             )
         </if>
 

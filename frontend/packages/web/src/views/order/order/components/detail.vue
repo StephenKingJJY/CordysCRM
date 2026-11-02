@@ -73,7 +73,7 @@
                 label-width="auto"
                 value-align="start"
                 tooltip-position="top-start"
-                :readonly="!hasAnyPermission(['ORDER:UPDATE'])"
+                :readonly="!hasAnyPermission(['ORDER:UPDATE']) || detailInfo?.sharedAccessOnly === true"
                 @init="handleInit"
                 @open-contract-detail="handleOpenContractDrawer"
                 @open-customer-detail="handleOpenCustomerDrawer"
@@ -85,7 +85,7 @@
           <OrderPayments
             v-if="visible"
             :order-id="props.sourceId"
-            :editable="!props.readonly && hasAnyPermission(['ORDER:UPDATE'])"
+            :editable="!props.readonly && !detailInfo?.sharedAccessOnly && hasAnyPermission(['ORDER:UPDATE'])"
             :api="paymentApi"
             @changed="emit('refresh')"
           />
@@ -125,6 +125,7 @@
   import { ProcessStatusEnum } from '@lib/shared/enums/process';
   import { useI18n } from '@lib/shared/hooks/useI18n';
   import { characterLimit } from '@lib/shared/method';
+  import { canUseSharedOrderAction } from '@lib/shared/method/orderSharedAccess';
   import { CollaborationType } from '@lib/shared/models/customer';
   import { OpportunityStageConfig } from '@lib/shared/models/opportunity';
   import { OrderItem } from '@lib/shared/models/order';
@@ -266,6 +267,7 @@
       formType: FormDesignKeyEnum.ORDER,
       dataActionMap: orderDetailDataActionMap,
       isDetail: true,
+      specialActionFilter: (row, keys) => keys.filter((key) => canUseSharedOrderAction(row, key)),
     });
 
   async function handleDelete(row: OrderItem) {
@@ -294,7 +296,10 @@
       return false;
     }
 
-    return hasApprovalScopedPermission(detailInfo.value, ['ORDER:UPDATE']);
+    return (
+      canUseSharedOrderAction(detailInfo.value, 'stage') &&
+      hasApprovalScopedPermission(detailInfo.value, ['ORDER:UPDATE'])
+    );
   });
 
   const detailActions = computed<{

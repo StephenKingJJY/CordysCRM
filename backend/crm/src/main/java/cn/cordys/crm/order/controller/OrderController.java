@@ -23,6 +23,7 @@ import cn.cordys.crm.order.dto.response.OrderListResponse;
 import cn.cordys.crm.order.dto.response.OrderStatisticResponse;
 import cn.cordys.crm.order.service.OrderExportService;
 import cn.cordys.crm.order.service.OrderService;
+import cn.cordys.crm.order.service.OrderCustomerAccessService;
 import cn.cordys.crm.system.constants.ExportConstants;
 import cn.cordys.crm.system.dto.request.ImportRequest;
 import cn.cordys.crm.system.dto.request.ResourceBatchEditRequest;
@@ -56,6 +57,9 @@ public class OrderController {
     @Resource
     private OrderExportService orderExportService;
 
+    @Resource
+    private OrderCustomerAccessService customerAccessService;
+
     @GetMapping("/module/form")
     @CsPermission(PermissionConstants.ORDER_READ)
     @Operation(summary = "获取表单配置")
@@ -71,9 +75,11 @@ public class OrderController {
     }
 
     @PostMapping("/update")
-    @CsPermission(value = PermissionConstants.ORDER_UPDATE, resourceId = "{#request.id}", formType = FormKeyConstants.ORDER)
+    @CsPermission(value = PermissionConstants.ORDER_UPDATE, resourceId = "{#request.id}", formType = FormKeyConstants.ORDER, allowSharedUpdate = true)
     @Operation(summary = "更新")
     public Order update(@Validated @RequestBody OrderUpdateRequest request) {
+        customerAccessService.checkSharedUpdateIdentity(orderService.selectByPrimaryKey(request.getId()), request,
+                SessionUtils.getUserId(), OrganizationContext.getOrganizationId());
         return orderService.update(request, SessionUtils.getUserId(), OrganizationContext.getOrganizationId());
     }
 
@@ -103,14 +109,30 @@ public class OrderController {
     @CsPermission(value = PermissionConstants.ORDER_READ, resourceId = "{#id}", formType = FormKeyConstants.ORDER)
     @Operation(summary = "获取详情快照")
     public OrderGetResponse getSnapshot(@PathVariable("id") String id) {
-        return orderService.getSnapshot(id, OrganizationContext.getOrganizationId());
+        return populateAccess(orderService.getSnapshot(id, OrganizationContext.getOrganizationId()));
     }
 
     @GetMapping("/get/{id}")
     @CsPermission(value = PermissionConstants.ORDER_READ, resourceId = "{#id}", formType = FormKeyConstants.ORDER)
     @Operation(summary = "详情")
     public OrderGetResponse get(@PathVariable("id") String id) {
-        return orderService.get(id, OrganizationContext.getOrganizationId());
+        return populateAccess(orderService.get(id, OrganizationContext.getOrganizationId()));
+    }
+
+    private OrderGetResponse populateAccess(OrderGetResponse response) {
+        if (response != null && response.getId() != null) {
+            Order current = orderService.selectByPrimaryKey(response.getId());
+            if (current != null) {
+                OrderListResponse access = new OrderListResponse();
+                access.setOwner(current.getOwner());
+                access.setCustomerId(current.getCustomerId());
+                access.setOrganizationId(current.getOrganizationId());
+                customerAccessService.populateAccess(List.of(access), SessionUtils.getUserId(), OrganizationContext.getOrganizationId());
+                response.setSharedAccessOnly(access.getSharedAccessOnly());
+                response.setSharedEditable(access.getSharedEditable());
+            }
+        }
+        return response;
     }
 
     @GetMapping("/module/form/snapshot/{id}")
@@ -148,10 +170,11 @@ public class OrderController {
     @PostMapping("/statistic")
     @CsPermission(PermissionConstants.ORDER_READ)
     @Operation(summary = "订单统计")
-    public OrderStatisticResponse searchStatistic(@Validated @RequestBody BaseCondition request) {
+    public OrderStatisticResponse searchStatistic(@Validated @RequestBody OrderPageRequest request) {
         ConditionFilterUtils.parseCondition(request, FormKey.ORDER.getKey());
         DeptDataPermissionDTO deptDataPermission = dataScopeService.getDeptDataPermission(SessionUtils.getUserId(),
                 OrganizationContext.getOrganizationId(), request.getViewId(), PermissionConstants.ORDER_READ);
+        customerAccessService.includeCustomerOrders(deptDataPermission);
         return orderService.searchStatistic(request, SessionUtils.getUserId(), OrganizationContext.getOrganizationId(), deptDataPermission);
     }
 

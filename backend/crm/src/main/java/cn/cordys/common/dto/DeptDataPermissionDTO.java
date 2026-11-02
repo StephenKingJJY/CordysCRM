@@ -35,6 +35,9 @@ public class DeptDataPermissionDTO {
      * 没有权限查看
      */
     private Boolean invisible = false;
+
+    /** Only enabled by order list/statistic queries, never by exports. */
+    private Boolean includeCustomerOrders = false;
     /**
      * 可查看的部门Id
      */

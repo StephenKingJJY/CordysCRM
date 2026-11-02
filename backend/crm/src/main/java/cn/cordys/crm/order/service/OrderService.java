@@ -135,6 +135,9 @@ public class OrderService extends BaseExportService implements ApprovalResourceH
     private ModuleFormCacheService moduleFormCacheService;
     @Resource
     private PermissionCache permissionCache;
+
+    @Resource
+    private OrderCustomerAccessService customerAccessService;
     @Resource
     private BaseMapper<Customer> customerMapper;
     @Resource
@@ -720,11 +723,13 @@ public class OrderService extends BaseExportService implements ApprovalResourceH
      * @return
      */
     public PagerWithOption<List<OrderListResponse>> list(OrderPageRequest request, String userId, String orgId, DeptDataPermissionDTO deptDataPermission, Boolean source) {
+        customerAccessService.includeCustomerOrders(deptDataPermission);
         Page<Object> page = PageHelper.startPage(request.getCurrent(), request.getPageSize());
         List<OrderListResponse> list = extOrderMapper.list(request, orgId, userId, deptDataPermission, source);
         List<OrderListResponse> results = buildList(list, orgId);
         ModuleFormConfigDTO customerFormConfig = getFormConfig(orgId);
         Map<String, List<OptionDTO>> optionMap = buildOptionMap(list, results, customerFormConfig);
+        customerAccessService.populateAccess(results, userId, orgId);
 
         return PageUtils.setPageInfoWithOption(page, results, optionMap);
     }

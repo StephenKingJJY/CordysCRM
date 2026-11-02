@@ -172,6 +172,7 @@
   import { useI18n } from '@lib/shared/hooks/useI18n';
   import useLocale from '@lib/shared/locale/useLocale';
   import { abbreviateNumber, characterLimit } from '@lib/shared/method';
+  import { canUseSharedOrderAction } from '@lib/shared/method/orderSharedAccess';
   import { ExportTableColumnItem } from '@lib/shared/models/common';
   import { OpportunityStageConfig } from '@lib/shared/models/opportunity';
   import { OrderItem } from '@lib/shared/models/order';
@@ -386,7 +387,7 @@
     formType: FormDesignKeyEnum.ORDER,
     dataActionMap: orderDataActionMap,
     specialActionFilter: (row, actionKeys) => {
-      return props.readonly ? [] : actionKeys;
+      return props.readonly ? [] : actionKeys.filter((key) => canUseSharedOrderAction(row, key));
     },
   });
 
@@ -499,13 +500,14 @@
   }
 
   function hasOrderStagePermission(row: OrderItem) {
-    return hasApprovalScopedPermission(row, ['ORDER:UPDATE']);
+    return canUseSharedOrderAction(row, 'stage') && hasApprovalScopedPermission(row, ['ORDER:UPDATE']);
   }
 
   await initApprovalPermission();
 
   const { useTableRes, customFieldsFilterConfig, fieldList } = await useFormCreateTable({
     formKey: props.formKey,
+    disabledSelection: (row: OrderItem) => row.sharedAccessOnly === true,
     excludeFieldIds: ['contractId'],
     operationColumn: {
       key: 'operation',
