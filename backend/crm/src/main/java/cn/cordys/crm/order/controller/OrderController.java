@@ -8,7 +8,6 @@ import cn.cordys.common.dto.DeptDataPermissionDTO;
 import cn.cordys.common.dto.ExportDTO;
 import cn.cordys.common.dto.ExportSelectRequest;
 import cn.cordys.common.dto.ResourceTabEnableDTO;
-import cn.cordys.common.dto.condition.BaseCondition;
 import cn.cordys.common.dto.stage.StageSortRequest;
 import cn.cordys.common.pager.PagerWithOption;
 import cn.cordys.common.permission.CsBatchPermission;
@@ -170,7 +169,7 @@ public class OrderController {
     @PostMapping("/statistic")
     @CsPermission(PermissionConstants.ORDER_READ)
     @Operation(summary = "订单统计")
-    public OrderStatisticResponse searchStatistic(@Validated @RequestBody OrderPageRequest request) {
+    public OrderStatisticResponse searchStatistic(@Validated @RequestBody OrderStatisticRequest request) {
         ConditionFilterUtils.parseCondition(request, FormKey.ORDER.getKey());
         DeptDataPermissionDTO deptDataPermission = dataScopeService.getDeptDataPermission(SessionUtils.getUserId(),
                 OrganizationContext.getOrganizationId(), request.getViewId(), PermissionConstants.ORDER_READ);
