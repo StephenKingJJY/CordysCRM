@@ -46,7 +46,7 @@ class LingxingStoreServiceTest {
         var table = new ProductSubField(); table.setId("products"); table.setInternalKey("orderProducts");
         table.setSubFields(List.of(field("product", "orderProduct")));
         when(forms.getBusinessFormConfig("order", "org")).thenReturn(config(store, table,
-                field("number", "lingxingOrderNumber"), field("sync", "lingxingOrderSyncStatus")));
+                field("number", "lingxingOrderNumber"), field("sync", "lingxingOrderSyncStatus"), field("custom", null)));
         when(forms.getBusinessFormConfig("product", "org")).thenReturn(config(
                 field("stocks", "lingxingStoreStocks"), field("reference", "lingxingReferenceStock")));
         var product = new Product(); product.setId("p"); product.setOrganizationId("org"); product.setStatus("1");

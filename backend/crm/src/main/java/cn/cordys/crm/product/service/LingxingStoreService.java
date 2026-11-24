@@ -114,7 +114,7 @@ public class LingxingStoreService {
         result.add(new BaseModuleFieldValue(storeField.getId(), selected));
         // A business edit must not erase synchronization state and accidentally unlock the store.
         Set<String> systemIds = new HashSet<>();
-        fields(FormKey.ORDER.getKey(), org).stream().filter(f -> SYNC_FIELDS.contains(f.getInternalKey()))
+        fields(FormKey.ORDER.getKey(), org).stream().filter(f -> f.getInternalKey() != null && SYNC_FIELDS.contains(f.getInternalKey()))
                 .forEach(f -> systemIds.add(f.getId()));
         result.removeIf(f -> systemIds.contains(f.getFieldId()));
         if (original != null) original.stream().filter(f -> systemIds.contains(f.getFieldId())).forEach(result::add);
