@@ -165,7 +165,7 @@
                 </choose>
             </when>
             <otherwise>
-                order by p.pos
+                order by p.pos, p.id
             </otherwise>
         </choose>
     </sql>

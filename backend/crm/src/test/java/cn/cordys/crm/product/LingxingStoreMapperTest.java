@@ -41,5 +41,26 @@ class LingxingStoreMapperTest extends BaseTest {
         var page = mapper.list(request, "ls-org");
         assertEquals(1, page.size());
         assertEquals(2, ((com.github.pagehelper.Page<?>) page).getTotal());
+
+    }
+
+    @Test void keepsAllProductsAcrossPagesWhenImportedPositionsAreEqual() {
+        var expected = new java.util.HashSet<String>();
+        for (int i = 0; i < 50; i++) {
+            String id = "ls-tie-" + i;
+            product(id, "ls-tie-org", "1", "{\"store-b\":0}");
+            expected.add(id);
+        }
+        var request = new ProductPageRequest(); request.setStatus("1");
+        request.setLingxingStockFieldId("ls-stock"); request.setLingxingStoreId("store-b");
+        var paged = new java.util.ArrayList<String>();
+        for (int current = 1; paged.size() < expected.size(); current++) {
+            com.github.pagehelper.PageHelper.startPage(current, 13);
+            var rows = mapper.list(request, "ls-tie-org");
+            assertFalse(rows.isEmpty());
+            paged.addAll(rows.stream().map(p -> p.getId()).toList());
+        }
+        assertEquals(expected.size(), paged.size());
+        assertEquals(expected, new java.util.HashSet<>(paged));
     }
 }
