@@ -31,6 +31,7 @@
   import { FieldRule } from 'vant';
 
   import { useI18n } from '@lib/shared/hooks/useI18n';
+  import { LINGXING_STORE_KEY } from '@lib/shared/method/lingxingStore';
 
   import { FormCreateField } from '@cordys/web/src/components/business/crm-form-create/types';
 
@@ -53,7 +54,7 @@
   watch(
     () => props.fieldConfig.defaultValue,
     (val) => {
-      value.value = val || value.value;
+      value.value = props.fieldConfig.internalKey === LINGXING_STORE_KEY ? value.value || val : val || value.value;
     },
     {
       immediate: true,

@@ -32,6 +32,31 @@ assert.equal(orderStoreLocked({ sync: '失败' }, fields), false);
 assert.equal(orderStoreLocked({}, fields), false);
 assert.equal(orderStoreLocked({ stage: 'SHIPPED' }, fields), true);
 
+// Editing an existing Tmall order must preserve its selected store when the native picker mounts.
+const pickerSource = fs
+  .readFileSync(path.resolve(__dirname, '../src/components/business/crm-form-create/components/basic/pick.vue'), 'utf8')
+  .match(/<script[^>]*>([\s\S]*?)<\/script>/)[1];
+const pickerAst = ts.createSourceFile('picker.ts', pickerSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+const defaultWatch = pickerAst.statements.find(
+  (node) =>
+    ts.isExpressionStatement(node) &&
+    ts.isCallExpression(node.expression) &&
+    node.expression.expression.getText(pickerAst) === 'watch'
+);
+assert.ok(defaultWatch);
+const pickerContext = {
+  exports: {},
+  props: { fieldConfig: { internalKey: 'lingxingOrderStore' } },
+  LINGXING_STORE_KEY: 'lingxingOrderStore',
+  value: { value: 'B' },
+};
+compile(`exports.applyDefault = ${defaultWatch.expression.arguments[1].getText(pickerAst)};`, pickerContext);
+pickerContext.exports.applyDefault('A');
+assert.equal(pickerContext.value.value, 'B');
+pickerContext.value.value = '';
+pickerContext.exports.applyDefault('A');
+assert.equal(pickerContext.value.value, 'A');
+
 // Exercise the actual desktop query builder so a store switch cannot fall back to all products.
 const desktopText = fs.readFileSync(
   path.resolve(__dirname, '../../web/src/components/business/crm-data-source-select/dataSourceTable.vue'),
