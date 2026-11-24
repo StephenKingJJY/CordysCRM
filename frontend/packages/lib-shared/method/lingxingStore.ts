@@ -16,6 +16,22 @@ export function orderStoreId(fields: StoreField[], values: Record<string, unknow
   return typeof value === 'string' && value ? value : undefined;
 }
 
+// Native edit initialization clears field defaults. Materialize the legacy store before that happens.
+export function initializeOrderStore(
+  fields: StoreField[],
+  values: Record<string, unknown>,
+  original?: Record<string, unknown>
+): void {
+  const field = fields.find((item) => item.internalKey === LINGXING_STORE_KEY);
+  const selected = orderStoreId(fields, values);
+  const missing = (value: unknown) => value === undefined || value === null || value === '';
+  if (!field || !selected || !missing(values[field.id])) return;
+  values[field.id] = selected;
+  if (original && missing(original[field.id])) {
+    original[field.id] = selected;
+  }
+}
+
 export function orderStoreLocked(detail: Record<string, unknown>, fields: StoreField[]): boolean {
   if (['PENDING_SHIPMENT', 'SHIPPED', 'VOIDED'].includes(String(detail.stage || ''))) return true;
   const values = Array.isArray(detail.moduleFields)

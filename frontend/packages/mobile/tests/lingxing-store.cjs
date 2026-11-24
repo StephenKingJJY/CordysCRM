@@ -14,7 +14,7 @@ function compile(source, context) {
 }
 const context = { exports: {} };
 compile(fs.readFileSync(path.resolve(__dirname, '../../lib-shared/method/lingxingStore.ts'), 'utf8'), context);
-const { orderStoreId, orderStoreLocked } = context.exports;
+const { initializeOrderStore, orderStoreId, orderStoreLocked } = context.exports;
 const fields = [
   { id: 'shop', internalKey: 'lingxingOrderStore', defaultValue: 'A' },
   { id: 'products', internalKey: 'orderProducts' },
@@ -24,6 +24,25 @@ const fields = [
 assert.equal(orderStoreId(fields, {}), 'A');
 assert.equal(orderStoreId(fields, { shop: 'B' }), 'B');
 assert.equal(orderStoreId([], {}), undefined);
+const legacyValues = {};
+const legacyOriginal = {};
+initializeOrderStore(fields, legacyValues, legacyOriginal);
+assert.equal(legacyValues.shop, 'A');
+assert.equal(legacyOriginal.shop, 'A');
+const editFields = fields.map((field) => ({ ...field, defaultValue: undefined }));
+assert.equal(
+  orderStoreId(editFields, legacyValues),
+  'A',
+  'Legacy edit must retain its store after native defaults are cleared'
+);
+const existingValues = { shop: 'B' };
+const existingOriginal = { shop: 'B' };
+initializeOrderStore(fields, existingValues, existingOriginal);
+assert.equal(existingValues.shop, 'B');
+assert.equal(existingOriginal.shop, 'B');
+const unrelated = { name: 'unchanged' };
+initializeOrderStore([], unrelated);
+assert.deepEqual(unrelated, { name: 'unchanged' });
 for (const status of ['同步中', '待人工确认', '成功', '取消中', '已取消', '取消失败']) {
   assert.equal(orderStoreLocked({ moduleFields: [{ fieldId: 'sync', fieldValue: status }] }, fields), true);
 }

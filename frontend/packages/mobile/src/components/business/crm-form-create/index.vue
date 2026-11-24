@@ -56,7 +56,12 @@
 
   import { FieldRuleEnum, FieldTypeEnum, FormDesignKeyEnum } from '@lib/shared/enums/formDesignEnum';
   import { useI18n } from '@lib/shared/hooks/useI18n';
-  import { LINGXING_STORE_KEY, orderStoreId, orderStoreLocked } from '@lib/shared/method/lingxingStore';
+  import {
+    initializeOrderStore,
+    LINGXING_STORE_KEY,
+    orderStoreId,
+    orderStoreLocked,
+  } from '@lib/shared/method/lingxingStore';
 
   import CrmPageWrapper from '@/components/pure/crm-page-wrapper/index.vue';
   import CrmFormCreateComponents from '@/components/business/crm-form-create/components';
@@ -259,6 +264,7 @@
       // 编辑页需要等详情和 originFormDetail 初始化完成，否则保存校验可能拿不到旧值而误触发 repeat 接口。
       await initFormDetail();
     }
+    initializeOrderStore(fieldList.value, formDetail.value, originFormDetail.value);
     storeReady = true;
   });
 

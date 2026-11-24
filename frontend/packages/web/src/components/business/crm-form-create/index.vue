@@ -80,6 +80,7 @@
     transformFieldValue,
   } from '@lib/shared/method/formCreate';
   import {
+    initializeOrderStore,
     LINGXING_STORE_KEY,
     orderStoreContext,
     orderStoreId,
@@ -889,6 +890,7 @@
     if (props.sourceId && props.needInitDetail) {
       await initFormDetail();
     }
+    initializeOrderStore(fieldList.value, formDetail.value, originFormDetail.value);
     initForm(props.linkScenario);
     initFormulaDataSourceRemark();
     await initApprovalReviewConfigPromise;
