@@ -1,4 +1,6 @@
 export default {
+  'formCreate.storeChangeTitle': '切换领星店铺',
+  'formCreate.storeChangeProducts': '切换店铺后需要清空当前产品明细，并按新店铺重新选择。是否继续？',
   'formCreate.createTitle': '新建{name}',
   'formCreate.editTitle': '更新{name}',
   'formCreate.customer': '客户',

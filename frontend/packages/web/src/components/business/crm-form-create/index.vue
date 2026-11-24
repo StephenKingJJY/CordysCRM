@@ -19,7 +19,7 @@
               :is="getItemComponent(item)"
               :id="item.id"
               v-model:value="formDetail[item.id]"
-              :field-config="item.resourceFieldId ? { ...item, rules: [] } : item"
+              :field-config="renderFieldConfig(item)"
               :form-detail="formDetail"
               :origin-form-detail="originFormDetail"
               :path="item.id"
@@ -79,6 +79,12 @@
     transformData,
     transformFieldValue,
   } from '@lib/shared/method/formCreate';
+  import {
+    LINGXING_STORE_KEY,
+    orderStoreContext,
+    orderStoreId,
+    orderStoreLocked,
+  } from '@lib/shared/method/lingxingStore';
   import { FormViewSize } from '@lib/shared/models/system/module';
 
   import CrmFormCreateComponents from '@/components/business/crm-form-create/components';
@@ -164,6 +170,43 @@
     linkFormKey,
     linkScenario,
     customFormId,
+  });
+
+  const selectedStore = computed(() => orderStoreId(fieldList.value, formDetail.value));
+  provide(orderStoreContext, selectedStore);
+  let storeReady = false;
+  let storeChangePending = false;
+  function renderFieldConfig(item: FormCreateField) {
+    const field = item.resourceFieldId ? { ...item, rules: [] } : item;
+    return item.internalKey === LINGXING_STORE_KEY && orderStoreLocked(detail.value || {}, fieldList.value)
+      ? { ...field, editable: false }
+      : field;
+  }
+  watch(selectedStore, (selected, previous) => {
+    if (!storeReady || storeChangePending || !previous || selected === previous) return;
+    const products = fieldList.value.find((field) => field.internalKey === 'orderProducts');
+    const store = fieldList.value.find((field) => field.internalKey === LINGXING_STORE_KEY);
+    if (!products || !store || !formDetail.value[products.id]?.length) return;
+    storeChangePending = true;
+    openModal({
+      type: 'warning',
+      title: t('formCreate.storeChangeTitle'),
+      content: t('formCreate.storeChangeProducts'),
+      closable: false,
+      closeOnEsc: false,
+      positiveText: t('common.confirm'),
+      negativeText: t('common.cancel'),
+      onPositiveClick: () => {
+        formDetail.value[products.id] = [];
+        storeChangePending = false;
+      },
+      onNegativeClick: () => {
+        formDetail.value[store.id] = previous;
+        nextTick(() => {
+          storeChangePending = false;
+        });
+      },
+    });
   });
 
   const { reviewAction, shouldConfirmUpdateChange, initApprovalReviewConfig } = useFormReviewAction({
@@ -849,6 +892,7 @@
     initForm(props.linkScenario);
     initFormulaDataSourceRemark();
     await initApprovalReviewConfigPromise;
+    storeReady = true;
   });
 </script>
 

@@ -45,6 +45,14 @@
         </include>
 
         where p.organization_id = #{orgId}
+        <if test="request.lingxingStoreId != null and request.lingxingStoreId != ''">
+            and exists (
+                select 1 from product_field_blob store_stock
+                where store_stock.resource_id = p.id and store_stock.field_id = #{request.lingxingStockFieldId}
+                  and JSON_CONTAINS_PATH(IF(JSON_VALID(store_stock.field_value), store_stock.field_value, '{}'),
+                      'one', CONCAT('$.&quot;', #{request.lingxingStoreId}, '&quot;'))
+            )
+        </if>
         <if test="request.status != null and request.status != ''">
             and p.status = #{request.status}
         </if>

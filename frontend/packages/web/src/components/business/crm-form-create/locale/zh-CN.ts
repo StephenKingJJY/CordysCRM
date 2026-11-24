@@ -1,4 +1,6 @@
 export default {
+  'formCreate.storeChangeTitle': '切换领星店铺',
+  'formCreate.storeChangeProducts': '切换店铺后需要清空当前产品明细，并按新店铺重新选择。是否继续？',
   'crmFormCreate.advanced.uploadTip': '拖拽或单击后粘贴图片，单张 {size} MB以内',
   'crmFormCreate.advanced.overSize': '文件大小限制为 {size}，请重新选择文件',
   'crmFormCreate.advanced.selectLocation': '请选择地址',

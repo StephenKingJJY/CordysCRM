@@ -60,6 +60,7 @@
   import { ProcessStatusEnum } from '@lib/shared/enums/process';
   import { useI18n } from '@lib/shared/hooks/useI18n';
   import { transformData } from '@lib/shared/method/formCreate';
+  import { orderStoreContext } from '@lib/shared/method/lingxingStore';
   import type { ContractItem, PaymentPlanItem } from '@lib/shared/models/contract';
   import { CustomerContractListItem } from '@lib/shared/models/customer';
   import { OpportunityItem, OpportunityStageConfig, QuotationItem } from '@lib/shared/models/opportunity';
@@ -124,6 +125,7 @@
 
   const { t } = useI18n();
   const userStore = useUserStore();
+  const selectedStore = inject(orderStoreContext, undefined);
 
   const selectedKeys = defineModel<DataTableRowKey[]>('selectedKeys', {
     required: true,
@@ -659,6 +661,7 @@
     setLoadListParams({
       keyword: _keyword !== undefined ? _keyword : keyword.value,
       customFormId: isCustomForm.value ? (props.sourceType as string | undefined) : undefined,
+      lingxingStoreId: props.fieldConfig?.internalKey === 'orderProduct' ? selectedStore?.value : undefined,
     });
     loadList();
     crmTableRef.value?.scrollTo({ top: 0 });

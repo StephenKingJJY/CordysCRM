@@ -86,6 +86,8 @@ public class ProductService {
     @Resource
     private ProductFieldService productFieldService;
     @Resource
+    private LingxingStoreService lingxingStoreService;
+    @Resource
     private LogService logService;
     @Resource
     private ModuleFormCacheService moduleFormCacheService;
@@ -99,9 +101,11 @@ public class ProductService {
     private SqlSessionFactory sqlSessionFactory;
 
     public PagerWithOption<List<ProductListResponse>> list(ProductPageRequest request, String orgId) {
+        lingxingStoreService.prepareProductQuery(request, orgId);
         Page<Object> page = PageHelper.startPage(request.getCurrent(), request.getPageSize());
         List<ProductListResponse> list = extProductMapper.list(request, orgId);
         List<ProductListResponse> buildList = buildListData(list);
+        lingxingStoreService.applyReferenceStock(buildList, request.getLingxingStoreId(), orgId);
         // 处理自定义字段选项数据
         ModuleFormConfigDTO productFormConfig = moduleFormCacheService.getBusinessFormConfig(FormKey.PRODUCT.getKey(), orgId);
         // 获取所有模块字段的值

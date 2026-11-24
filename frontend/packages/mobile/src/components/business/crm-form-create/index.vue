@@ -51,11 +51,12 @@
 
 <script setup lang="ts">
   import { useRoute, useRouter } from 'vue-router';
-  import { FormInstance } from 'vant';
+  import { FormInstance, showConfirmDialog } from 'vant';
   import { cloneDeep } from 'lodash-es';
 
   import { FieldRuleEnum, FieldTypeEnum, FormDesignKeyEnum } from '@lib/shared/enums/formDesignEnum';
   import { useI18n } from '@lib/shared/hooks/useI18n';
+  import { LINGXING_STORE_KEY, orderStoreId, orderStoreLocked } from '@lib/shared/method/lingxingStore';
 
   import CrmPageWrapper from '@/components/pure/crm-page-wrapper/index.vue';
   import CrmFormCreateComponents from '@/components/business/crm-form-create/components';
@@ -91,6 +92,7 @@
     initFormDetail,
     saveForm,
     initFormShowControl,
+    detail,
   } = useFormCreateApi({
     formKey,
     sourceId: ref(route.query.id as string),
@@ -99,8 +101,36 @@
     otherSaveParams: lastPageParams,
   });
 
-  const mobileFieldList = computed(() => {
-    return fieldList.value.filter((item) => item.mobile !== false);
+  const mobileFieldList = computed(() =>
+    fieldList.value
+      .filter((item) => item.mobile !== false)
+      .map((item) =>
+        item.internalKey === LINGXING_STORE_KEY && orderStoreLocked(detail.value, fieldList.value)
+          ? { ...item, editable: false }
+          : item
+      )
+  );
+  const selectedStore = computed(() => orderStoreId(fieldList.value, formDetail.value));
+  let storeReady = false;
+  let storeChangePending = false;
+  watch(selectedStore, async (selected, previous) => {
+    if (!storeReady || storeChangePending || !previous || selected === previous) return;
+    const products = fieldList.value.find((field) => field.internalKey === 'orderProducts');
+    const store = fieldList.value.find((field) => field.internalKey === LINGXING_STORE_KEY);
+    if (!products || !store || !formDetail.value[products.id]?.length) return;
+    storeChangePending = true;
+    try {
+      await showConfirmDialog({
+        title: t('formCreate.storeChangeTitle'),
+        message: t('formCreate.storeChangeProducts'),
+      });
+      formDetail.value[products.id] = [];
+    } catch {
+      formDetail.value[store.id] = previous;
+      await nextTick();
+    } finally {
+      storeChangePending = false;
+    }
   });
 
   function getItemComponent(type: FieldTypeEnum) {
@@ -229,6 +259,7 @@
       // 编辑页需要等详情和 originFormDetail 初始化完成，否则保存校验可能拿不到旧值而误触发 repeat 接口。
       await initFormDetail();
     }
+    storeReady = true;
   });
 
   function getRuleType(item: FormCreateField) {

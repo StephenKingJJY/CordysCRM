@@ -22,6 +22,7 @@
           :label="field.name"
           :data-source-type="field.dataSourceType as FieldDataSourceTypeEnum"
           :show-reference-stock="field.internalKey === 'orderProduct'"
+          :list-params="field.internalKey === 'orderProduct' ? { lingxingStoreId: selectedStore } : undefined"
           :disabled="field.editable === false || fieldConfig.editable === false"
           :rules="[{ required: true, message: t('mobileOrder.productRequired') }]"
           @update:value="row[key(field)] = Array.isArray($event) ? $event[0] : $event"
@@ -64,6 +65,7 @@
   import { FieldDataSourceTypeEnum, FieldTypeEnum } from '@lib/shared/enums/formDesignEnum';
   import { useI18n } from '@lib/shared/hooks/useI18n';
   import { getGenerateId } from '@lib/shared/method';
+  import { orderStoreId } from '@lib/shared/method/lingxingStore';
 
   import CrmDataSource from '@/components/business/crm-datasource/index.vue';
   import FormulaValue from './formula-value.vue';
@@ -77,6 +79,7 @@
   }>();
   const rows = defineModel<Record<string, any>[]>('value', { default: () => [] });
   const { t } = useI18n();
+  const selectedStore = computed(() => orderStoreId(props.fields, props.formDetail));
   const visibleFields = computed(() => props.fieldConfig.subFields?.filter((f) => f.readable !== false) || []);
   const key = (field: FormCreateField) => field.businessKey || field.id;
 

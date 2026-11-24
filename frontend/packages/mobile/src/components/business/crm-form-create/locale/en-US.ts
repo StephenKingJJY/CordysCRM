@@ -1,4 +1,7 @@
 export default {
+  'formCreate.storeChangeTitle': 'Change Lingxing store',
+  'formCreate.storeChangeProducts':
+    'Changing the store clears the current product lines. Select products again for the new store. Continue?',
   'formCreate.createTitle': 'Create {name}',
   'formCreate.editTitle': 'Update {name}',
   'formCreate.customer': 'Account',

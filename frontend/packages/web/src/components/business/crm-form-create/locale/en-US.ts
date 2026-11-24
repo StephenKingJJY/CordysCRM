@@ -1,4 +1,7 @@
 export default {
+  'formCreate.storeChangeTitle': 'Change Lingxing store',
+  'formCreate.storeChangeProducts':
+    'Changing the store clears the current product lines. Select products again for the new store. Continue?',
   'crmFormCreate.advanced.uploadTip': 'Drag or click to paste the image, single image within {size} MB',
   'crmFormCreate.advanced.overSize': 'The file size limit is {size}, please reselect the file',
   'crmFormCreate.advanced.selectLocation': 'Please select the address',

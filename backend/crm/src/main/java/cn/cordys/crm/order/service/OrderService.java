@@ -122,6 +122,10 @@ public class OrderService extends BaseExportService implements ApprovalResourceH
     @Resource
     private BaseMapper<Order> orderMapper;
     @Resource
+    private cn.cordys.crm.order.mapper.ExtOrderSyncMapper orderSyncMapper;
+    @Resource
+    private cn.cordys.crm.product.service.LingxingStoreService lingxingStoreService;
+    @Resource
     private cn.cordys.crm.order.mapper.ExtOrderPaymentMapper orderPaymentMapper;
     @Resource
     private BaseService baseService;
@@ -177,7 +181,8 @@ public class OrderService extends BaseExportService implements ApprovalResourceH
     @OperationLog(module = LogModule.ORDER_INDEX, type = LogType.ADD)
     @HitApproval(formKey = FormKey.ORDER, executeType = ExecuteTimingEnum.CREATE, operatorId = "{#operatorId}")
     public Order add(OrderAddRequest request, String operatorId, String orgId) {
-        List<BaseModuleFieldValue> moduleFields = request.getModuleFields();
+        List<BaseModuleFieldValue> moduleFields = lingxingStoreService.validateOrder(request.getModuleFields(), null, orgId);
+        request.setModuleFields(moduleFields);
         ModuleFormConfigDTO moduleFormConfigDTO = request.getModuleFormConfigDTO();
         if (moduleFormConfigDTO == null) {
             throw new GenericException(Translator.get("order.form.config.required"));
@@ -391,8 +396,9 @@ public class OrderService extends BaseExportService implements ApprovalResourceH
     @OperationLog(module = LogModule.ORDER_INDEX, type = LogType.UPDATE, resourceId = "{#request.id}")
     @HitApproval(formKey = FormKey.ORDER, executeType = ExecuteTimingEnum.UPDATE, resourceId = "{#request.id}", updateType = "{#request.updateType}", operatorId = "{#userId}", comment = "{#request.comment}")
     public Order update(OrderUpdateRequest request, String userId, String orgId) {
-        Order oldOrder = orderMapper.selectByPrimaryKey(request.getId());
-        List<BaseModuleFieldValue> moduleFields = request.getModuleFields();
+        Order oldOrder = orderSyncMapper.lockOrder(request.getId(), orgId);
+        List<BaseModuleFieldValue> moduleFields = new ArrayList<>(request.getModuleFields() == null ? List.of() : request.getModuleFields());
+        request.setModuleFields(moduleFields);
         ModuleFormConfigDTO moduleFormConfigDTO = request.getModuleFormConfigDTO();
         if (moduleFormConfigDTO == null) {
             throw new GenericException(Translator.get("order.form.config.required"));
@@ -401,6 +407,14 @@ public class OrderService extends BaseExportService implements ApprovalResourceH
         Optional.ofNullable(oldOrder).ifPresentOrElse(item -> {
 
             List<BaseModuleFieldValue> originFields = orderFieldService.getModuleFieldValuesByResourceId(request.getId());
+            var currentFields = orderSyncMapper.lockFields(request.getId());
+            Set<String> currentIds = currentFields.stream().map(BaseModuleFieldValue::getFieldId).collect(Collectors.toSet());
+            originFields.removeIf(f -> currentIds.contains(f.getFieldId()));
+            originFields.addAll(currentFields);
+            List<BaseModuleFieldValue> validated = lingxingStoreService.validateOrder(moduleFields, originFields, orgId,
+                    Set.of("PENDING_SHIPMENT", "SHIPPED", "VOIDED").contains(oldOrder.getStage()));
+            moduleFields.clear();
+            moduleFields.addAll(validated);
             Order order = BeanUtils.copyBean(new Order(), request);
             order.setUpdateTime(System.currentTimeMillis());
             order.setUpdateUser(userId);
@@ -906,6 +920,9 @@ public class OrderService extends BaseExportService implements ApprovalResourceH
      * @param orgId   当前组织ID
      */
     public BatchAffectReasonResponse batchUpdate(ResourceBatchEditRequest request, String userId, String orgId) {
+        if (lingxingStoreService.isStoreField(request.getFieldId(), orgId)) {
+            throw new GenericException(Translator.get("order.store.batch.unsupported"));
+        }
         BaseField field = orderFieldService.getAndCheckField(request.getFieldId(), orgId);
         moduleFormService.setFieldBusinessParam(field);
         List<Order> originOrders = orderMapper.selectByIds(request.getIds());
